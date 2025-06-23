@@ -1,0 +1,25 @@
+# This file specifies basic styles to enforce consistency across the codebase.
+
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+spelling_language = en-US
+
+[Makefile]
+indent_style = tab
+
+# Languages where two-space indents are common.
+[*.{js,ts,jsx,tsx,html,css,yaml}]
+indent_size = 2
+
+[.clang-tidy]
+indent_size = 2
+
+[*.{diff,md}]
+trim_trailing_whitespace = false
