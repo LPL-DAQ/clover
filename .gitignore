@@ -1,2 +1,6 @@
-.vscode
+.vscode/*
+!.vscode/extensions.json
 .idea
+.DS_Store
+secrets
+target
