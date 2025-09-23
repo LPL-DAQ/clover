@@ -1,0 +1,13 @@
+{
+    "name": "clover",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/lpl/clover,type=bind,consistency=cached",
+    "workspaceFolder": "/home/lpl/clover",
+    "privileged": true,
+    "onCreateCommand": ". /home/lpl/.venv/bin/activate && west init -l /home/lpl/clover && cd /home/lpl && west update && uv pip install -r /home/lpl/zephyr/scripts/requirements.txt",
+    "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+    "remoteUser": "lpl"
+    // "image": "todo :)"
+}

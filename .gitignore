@@ -1,6 +1,11 @@
 .vscode/*
 !.vscode/extensions.json
+
 .idea
 .DS_Store
-secrets
-target
+.venv
+__pycache__/
+
+/build*
+/twister-out*
+/modules

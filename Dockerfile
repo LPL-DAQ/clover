@@ -9,8 +9,9 @@ FROM ubuntu:noble
 RUN << EOF
 apt update
 apt -y upgrade
-apt -y install sudo nano git curl wget jq yq iproute2 netcat-openbsd gh
+apt -y install sudo nano git curl wget jq yq iproute2 netcat-openbsd gh locales
 EOF
+ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
 # Zephyr dependencies -- from https://docs.zephyrproject.org/latest/develop/getting_started/index.html, but we
 # replace gcc/g++ with gcc-arm-none-eabi because in practice we're just building for Cortex M7's.
@@ -37,7 +38,10 @@ USER lpl
 # Python
 RUN << EOF
 curl -LsSf https://astral.sh/uv/install.sh | sh
+. "$HOME/.local/bin/env"
+cd $HOME && uv venv
 uv tool install ruff@latest
+uv pip install west
 EOF
 
 # Rust
@@ -55,7 +59,23 @@ touch ~/.sudo_as_admin_successful
 # Oh-my-bash terminal theme
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/a59433af4d5c68861d66b2b9dcf8ada7f1b0e6f5/tools/install.sh)" --unattended
 mkdir -p ~/.oh-my-bash/themes/lpl-term
-curl -s -o ~/.oh-my-bash/themes/lpl-term/lpl-term.theme.sh https://gist.githubusercontent.com/jamm-es/341e7649817aa18a1fc2b96a6b69bf00/raw/d637de3a6e8e03c997d2413c7dd236a3da163b56/lpl-term.theme.sh
+cat << "END" > ~/.oh-my-bash/themes/lpl-term/lpl-term.theme.sh
+#! bash oh-my-bash.module
+
+# Derivative of https://github.com/ohmyzsh/ohmyzsh/blob/master/themes/tonotdo.zsh-theme, but with a delta as the terminator.
+
+SCM_THEME_PROMPT_PREFIX=" ${_omb_prompt_purple}"
+SCM_THEME_PROMPT_SUFFIX=" ${_omb_prompt_normal}"
+SCM_THEME_PROMPT_DIRTY=" ${_omb_prompt_brown}✗"
+SCM_THEME_PROMPT_CLEAN=" ${_omb_prompt_green}✓"
+SCM_GIT_SHOW_DETAILS="false"
+
+function _omb_theme_PROMPT_COMMAND() {
+  PS1="${_omb_prompt_olive}\u${_omb_prompt_normal}${_omb_prompt_teal}@\h${_omb_prompt_normal}${_omb_prompt_purple} ${_omb_prompt_normal}${_omb_prompt_green}\w${_omb_prompt_normal}${_omb_prompt_red} Δ${_omb_prompt_normal} "
+}
+
+_omb_util_add_prompt_command _omb_theme_PROMPT_COMMAND
+END
 sed -i 's/^OSH_THEME=.*$/OSH_THEME="lpl-term"/' ~/.bashrc
 
 # LPL logo
@@ -70,4 +90,7 @@ ${lplred} / /__${lplylw}/ ___${lplred}/ /__
 ${lplred}/____${lplylw}/_/  ${lplred}/____/
 ${lplbld}Welcome!${lplrst}"
 END
+
+# Ensure we are in venv
+echo '. "$HOME/.venv/bin/activate"' >> "$HOME/.bashrc"
 EOF

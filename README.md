@@ -1,4 +1,6 @@
-# insert name here
+# clover
+
+LPL firmware.
 
 ## Development Environment
 
