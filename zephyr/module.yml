@@ -4,3 +4,7 @@ build:
   settings:
     board_root: .
     dts_root: .
+runners:
+  - file: runners/common.py  # This file *must* go first.
+  - file: runners/stm32cubeprogrammer_flasherd.py
+  - file: runners/tycmd_flasherd.py

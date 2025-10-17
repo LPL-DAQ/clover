@@ -27,6 +27,11 @@ RUN << EOF
 apt -y install cppcheck clang-tidy
 EOF
 
+# Other dev dependencies
+RUN << EOF
+apt -y install protobuf-compiler build-essential
+EOF
+
 # Create non-root user
 RUN << EOF
 useradd --create-home --shell /bin/bash --gid 1000 --groups sudo lpl
@@ -71,7 +76,7 @@ SCM_THEME_PROMPT_CLEAN=" ${_omb_prompt_green}✓"
 SCM_GIT_SHOW_DETAILS="false"
 
 function _omb_theme_PROMPT_COMMAND() {
-  PS1="${_omb_prompt_olive}\u${_omb_prompt_normal}${_omb_prompt_teal}@\h${_omb_prompt_normal}${_omb_prompt_purple} ${_omb_prompt_normal}${_omb_prompt_green}\w${_omb_prompt_normal}${_omb_prompt_red} Δ${_omb_prompt_normal} "
+    PS1="${_omb_prompt_olive}\u${_omb_prompt_normal}${_omb_prompt_teal}@\h${_omb_prompt_normal}${_omb_prompt_purple} ${_omb_prompt_normal}${_omb_prompt_green}\w${_omb_prompt_normal}${_omb_prompt_red} Δ${_omb_prompt_normal} "
 }
 
 _omb_util_add_prompt_command _omb_theme_PROMPT_COMMAND
@@ -83,14 +88,32 @@ cat << "END" >> ~/.bashrc
 lplred="\e[31;1m"
 lplylw="\e[33;1m"
 lplbld="\e[39;1m"
-lplrst="\e[0m"
+style_rst="\e[0m"
 echo -e "   ${lplred}__   ${lplylw}___ ${lplred} __
 ${lplred}  / /  ${lplylw}/ _ \\\\${lplred}/ /
 ${lplred} / /__${lplylw}/ ___${lplred}/ /__
 ${lplred}/____${lplylw}/_/  ${lplred}/____/
-${lplbld}Welcome!${lplrst}"
-END
+${lplbld}Welcome!${style_rst}"
 
-# Ensure we are in venv
+# Show flasherd status
+if $HOME/clover/scripts/flasherd-connection-test.sh > /dev/null 2>&1; then
+    grnbld="\e[32;1m"
+    echo -e "flasherd is ${grnbld}active${style_rst}".
+else
+    redbld="\e[31;1m"
+    echo -e "flasherd is ${redbld}inactive${style_rst}".
+fi
+END
+EOF
+
+# Final environment setup
+RUN << EOF
+# Activate venv
 echo '. "$HOME/.venv/bin/activate"' >> "$HOME/.bashrc"
+# Populate zephyr vars
+echo '. $HOME/zephyr/zephyr-env.sh' >> "$HOME/.bashrc"
+# Add zephyr python path for IDE support
+echo 'export PYTHONPATH="$PYTHONPATH:$HOME/zephyr/scripts/west_commands"' >> "$HOME/.bashrc"
+# Add clover binaries to path
+echo 'export PATH="$PATH:$HOME/clover/bin"' >> "$HOME/.bashrc"
 EOF

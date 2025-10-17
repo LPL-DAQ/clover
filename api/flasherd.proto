@@ -1,0 +1,31 @@
+syntax = "proto3";
+package flasherd;
+
+service Flasherd {
+  rpc RunCommand(stream RunCommandRequest) returns (stream RunCommandResponse);
+}
+
+// Represents a segment of a command. `regular` segments are passed as-is, while `path` segments should be paths
+// relative to the clover root. Only one or the other may be specified.
+message Arg {
+  optional string regular = 1;
+  optional string path = 2;
+}
+
+// Caller must start by sending a Request with just the command field populated. Each subsequent Request packet may only
+// contain stdin segments, which will be streamed to the command process.
+message RunCommandRequest {
+  optional string command_windows = 1;
+  optional string command_macos = 2;
+  optional string command_linux = 3;
+  repeated Arg args = 4;
+  optional bytes stdin = 5;
+}
+
+// Server will send zero or more packets with only stdout or stderr populated. When the command process terminates, the
+// final packet sent will populate only the exit_code.
+message RunCommandResponse {
+  optional uint32 exit_code = 1;
+  optional bytes stdout = 2;
+  optional bytes stderr = 3;
+}

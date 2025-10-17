@@ -1,0 +1,57 @@
+# Copyright (c) 2024 NXP
+#
+# SPDX-License-Identifier: Apache-2.0
+
+'''Runner for teensy .'''
+
+import os
+import subprocess
+from typing import override
+from clover_runners_common import FlasherdCommand
+
+from runners.core import ZephyrBinaryRunner
+
+
+class TycmdFlasherdBinaryRunner(ZephyrBinaryRunner):
+    """tycmd frontend integrated with flasherd"""
+
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+    @classmethod
+    def name(cls):
+        return 'tycmd_flasherd'
+
+    @classmethod
+    def do_add_parser(cls, parser):
+        pass
+
+    @classmethod
+    def do_create(cls, cfg, args) -> "TycmdFlasherdBinaryRunner":
+        return TycmdFlasherdBinaryRunner(cfg)
+
+    def do_run(self, command):
+        if command == 'flash':
+            self.flash()
+
+    def flash(self):
+        # Prepare base command
+        cmd = FlasherdCommand('flasherd-client')
+        cmd.add_windows_command(r'C:\Program Files (x86)\TyTools\tycmd.exe')
+        cmd.add_macos_command('tycmd')
+        cmd.add_linux_command('tycmd')
+
+        if self.cfg.hex_file is not None and os.path.isfile(self.cfg.hex_file):
+            cmd += 'upload'
+            cmd.add_path_arg(self.cfg.hex_file)
+        else:
+            raise ValueError(
+                f'Cannot flash; no hex ({self.hex_name}) file found. ')
+
+        self.logger.info(f'Flashing file: {self.cfg.hex_file}')
+
+        try:
+            self.check_call(cmd.payload)
+            self.logger.info('Success')
+        except subprocess.CalledProcessError as grepexc:
+            self.logger.error(f"Failure {grepexc.returncode}")

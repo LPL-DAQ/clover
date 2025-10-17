@@ -15,7 +15,7 @@ spelling_language = en-US
 indent_style = tab
 
 # Languages where two-space indents are common.
-[*.{js,ts,jsx,tsx,html,css,yaml}]
+[*.{js,ts,jsx,tsx,html,css,yaml,yml,proto,json,json5}]
 indent_size = 2
 
 [.clang-tidy]
