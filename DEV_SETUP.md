@@ -60,3 +60,17 @@ hello
 [flasherd-client] Terminated naturally with status code 0
 [flasherd-connection-test] flasherd is up!
 ```
+
+## Test build
+
+Run the following to build the `throttle` application:
+
+```shell
+west build -p auto throttle -b throttle_legacy
+```
+
+Then the following to flash:
+
+```shell
+west flash
+```
