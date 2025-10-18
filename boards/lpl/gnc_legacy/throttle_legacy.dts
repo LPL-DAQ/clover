@@ -1,0 +1,22 @@
+/*
+LPL throttle dev 2.5 PCB, from spring/summer 2025.
+*/
+
+/dts-v1/;
+
+#include <../boards/pjrc/teensy4/teensy41.dts>
+
+/ {
+	model = "Throttle Legacy Board";
+
+	example_sensor: example-sensor {
+		compatible = "zephyr,example-sensor";
+		input-gpios = <&gpio6 18 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+	};
+
+	blink_led: blink-led {
+		compatible = "blink-gpio-led";
+		led-gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
+		blink-period-ms = <1000>;
+	};
+};
