@@ -61,7 +61,7 @@ hello
 [flasherd-connection-test] flasherd is up!
 ```
 
-## Test build
+## Test build and flash
 
 Run the following to build the `throttle` application:
 
@@ -69,8 +69,31 @@ Run the following to build the `throttle` application:
 west build -p auto throttle -b throttle_legacy
 ```
 
-Then the following to flash:
+Press the large white reset button on the Teensy. Then, run the following to flash:
 
-```shell
-west flash
+```text
+lpl@docker-desktop ~/clover Δ west flash                                                                                                                                                                                                                                                                            
+-- west flash: rebuilding
+ninja: no work to do.                                                                                                                                                                                                                                                                                               
+-- west flash: using runner tycmd_flasherd
+-- runners.tycmd_flasherd: Flashing file: /home/lpl/clover/build/zephyr/zephyr.hex                                                                                                                                                                                                                                  
+[flasherd-client] Received args: ["--command-windows", "C:\\Program Files (x86)\\TyTools\\tycmd.exe", "--command-macos", "tycmd", "--command-linux", "tycmd", "--arg", "upload", "--arg", "--nocheck", "--arg-path", "/home/lpl/clover/build/zephyr/zephyr.hex"]                                                    
+[flasherd-client] Connecting to host flasherd at port 6767
+      upload@17271870-Teensy  Uploading to board '17271870-Teensy' (Teensy 4.1)
+      upload@17271870-Teensy  Firmware: zephyr.hex
+      upload@17271870-Teensy  Flash usage: 93 kiB (1.2%)
+      upload@17271870-Teensy  Uploading...
+      upload@17271870-Teensy  Sending reset command (with RTC)
+      upload@17271870-Teensy  Board '17271870-Teensy' has disappeared
+[flasherd-client] Terminated naturally with status code 1
+ERROR: runners.tycmd_flasherd: Failure 1
 ```
+
+The board should start flashing at a slow, 1-second period, indicating that it's awaiting serial connection.
+
+Open TyCommander, select the board, and enable serial logging. Once the serial console connects, the LED should start
+quickly flashing as the application runs.
+
+To rebuild and reflash, simply press the reset button and run `west flash`. As long as TyCommander is open, it should
+reconnect serial automatically.
+
