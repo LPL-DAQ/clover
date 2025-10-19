@@ -43,10 +43,11 @@ class TycmdFlasherdBinaryRunner(ZephyrBinaryRunner):
 
         if self.cfg.hex_file is not None and os.path.isfile(self.cfg.hex_file):
             cmd += 'upload'
+            cmd += '--nocheck'
             cmd.add_path_arg(self.cfg.hex_file)
         else:
             raise ValueError(
-                f'Cannot flash; no hex ({self.hex_name}) file found. ')
+                f'Cannot flash; no hex ({self.cfg.hex_file}) file found. ')
 
         self.logger.info(f'Flashing file: {self.cfg.hex_file}')
 

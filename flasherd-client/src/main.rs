@@ -8,8 +8,7 @@ use futures::executor::block_on;
 use std::env;
 use std::io::BufRead;
 use std::mem::replace;
-use std::process::{ExitCode, exit};
-use std::thread::panicking;
+use std::process::exit;
 use tokio::io;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
@@ -23,16 +22,12 @@ struct StdinGuard {}
 
 impl Drop for StdinGuard {
     fn drop(&mut self) {
-        if panicking() {
-            exit(101);
-        } else {
-            exit(0);
-        }
+        exit(101);
     }
 }
 
 #[tokio::main]
-async fn main() -> ExitCode {
+async fn main() {
     // Skips tokio runtime graceful shutdown because stdin reader will hang indefinitely.
     let _exit_guard = StdinGuard {};
 
@@ -62,9 +57,9 @@ async fn main() -> ExitCode {
             "--command-linux" => run_request.command_linux = val,
             "--arg-path" => {
                 let val = val.unwrap();
-                let relative_path = if let Some(path) = val.strip_prefix("~/clover") {
+                let relative_path = if let Some(path) = val.strip_prefix("~/clover/") {
                     path
-                } else if let Some(path) = val.strip_prefix("/home/lpl/clover") {
+                } else if let Some(path) = val.strip_prefix("/home/lpl/clover/") {
                     path
                 } else if !val.starts_with("/") {
                     val.as_str()
@@ -145,5 +140,5 @@ async fn main() -> ExitCode {
     };
 
     println!("[flasherd-client] Terminated naturally with status code {exit_code}");
-    ExitCode::from(exit_code)
+    exit(exit_code.into());
 }
