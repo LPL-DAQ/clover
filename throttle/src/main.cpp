@@ -2,16 +2,18 @@
  * Copyright (c) 2021 Nordic Semiconductor ASA
  * SPDX-License-Identifier: Apache-2.0
  */
-
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/drivers/uart.h>
-#include <app/drivers/blink.h>
 #include <zephyr/sys/util.h>
 #include <string.h>
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/drivers/uart.h>
+
+extern "C" {
+#include <app/drivers/blink.h>
+}
 
 LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
 

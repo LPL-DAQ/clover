@@ -14,7 +14,7 @@ directory:
 
 ```shell
 # On host
-cargo run --bin flasherd_cleaner --release && cargo run --bin flasherd --release -- "c:\Users\james\lpl-flightsoft" --daemonize
+cargo run --bin flasherd_cleaner --release && cargo run --bin flasherd --release -- "/path/to/clover" --daemonize
 ```
 
 **Example:**
