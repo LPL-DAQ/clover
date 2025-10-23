@@ -4,12 +4,14 @@
  */
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/sys/printk.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/sys/util.h>
-#include <string.h>
 #include <zephyr/usb/usb_device.h>
-#include <zephyr/drivers/uart.h>
+#include <zephyr/net/net_if.h>
+#include <zephyr/net/socket.h>
+#include <zephyr/net/net_pkt.h>
+
+#include "Server.h"
 
 extern "C" {
 #include <app/drivers/blink.h>
@@ -18,41 +20,27 @@ extern "C" {
 LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
 
 BUILD_ASSERT(DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart),
-		 "Console device is not ACM CDC UART device");
+             "Console device is not ACM CDC UART device");
 
-int main(void)
-{
-	if (usb_enable(NULL)) {
-		return 0;
-	}
-	const struct device *usb_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
-	uint32_t dtr = 0;
-	while (!dtr) {
-		uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
-		k_sleep(K_MSEC(100));
-	}
+int main(void) {
+    if (usb_enable(NULL)) {
+        return 0;
+    }
+    const struct device *usb_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+    uint32_t dtr = 0;
+    while (!dtr) {
+        uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
+        k_sleep(K_MSEC(100));
+    }
 
-	const struct device *blink = DEVICE_DT_GET(DT_NODELABEL(blink_led));
-	if (!device_is_ready(blink)) {
-		LOG_ERR("Blink LED not ready");
-		return 0;
-	}
-	blink_set_period_ms(blink, 1000u);
+    const struct device *blink = DEVICE_DT_GET(DT_NODELABEL(blink_led));
+    if (!device_is_ready(blink)) {
+        LOG_ERR("Blink LED not ready");
+        return 0;
+    }
+    blink_set_period_ms(blink, 1000u);
+    LOG_INF("hello there!");
 
-	printk("HELLO!\n");
-	LOG_INF("hello there!");
-
-	blink_set_period_ms(blink, 200u);
-
-	printk("Hello!\n");
-
-	int counter = 0;
-	while (1) {
-		k_sleep(K_MSEC(2000));
-		counter++;
-		LOG_INF("Still alive.. %d", counter);
-	}
-
-	return 0;
+    serve_connections();
 }
 

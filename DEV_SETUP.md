@@ -97,3 +97,40 @@ quickly flashing as the application runs.
 To rebuild and reflash, simply press the reset button and run `west flash`. As long as TyCommander is open, it should
 reconnect serial automatically.
 
+## Troubleshooting
+
+### Build fails due to `<...>.h`: No such file or directory
+
+**Example**:
+
+```text
+/home/lpl/zephyr/include/zephyr/sys/util.h:31:10: fatal error: string.h: No such file or directory
+   31 | #include <string.h>
+      |          ^~~~~~~~~~
+compilation terminated.
+ninja: build stopped: subcommand failed
+```
+
+Ensure that the C/C++ compiler used is from the Zephyr SDK.
+
+**Incorrect CMake output**:
+
+```text
+-- Found toolchain: cross-compile (/usr/bin/arm-none-eabi-)
+...
+-- C compiler: /usr/bin/arm-none-eabi-gcc
+-- C++ compiler: /usr/bin/arm-none-eabi-g++
+```
+
+This can be fixed by ensuring the `ZEPHYR_TOOLCHAIN_VARIANT` environment variable is set to `zephyr`. IDE tools may not
+correctly pick this up, but it i.
+
+**Correct CMake output**:
+
+```text
+-- Found host-tools: zephyr 0.17.2 (/home/lpl/zephyr-sdk-0.17.2)
+-- Found toolchain: zephyr 0.17.2 (/home/lpl/zephyr-sdk-0.17.2)
+...
+-- C compiler: /home/lpl/zephyr-sdk-0.17.2/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc
+-- C++ compiler: /home/lpl/zephyr-sdk-0.17.2/arm-zephyr-eabi/bin/arm-zephyr-eabi-g++
+```
