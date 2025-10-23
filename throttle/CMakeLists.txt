@@ -7,6 +7,11 @@
 cmake_minimum_required(VERSION 3.13.1)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
-#project(app LANGUAGES CPP)
+# For god's sake, why isn't this set automatically?
+set(CMAKE_CPP_COMPILER "${CROSS_COMPILE}g++")
 
+message(STATUS "C compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "C++ compiler: ${CMAKE_CPP_COMPILER}")
+
+project(app)
 target_sources(app PRIVATE src/main.cpp)

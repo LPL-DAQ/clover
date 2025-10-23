@@ -116,4 +116,6 @@ echo '. $HOME/zephyr/zephyr-env.sh' >> "$HOME/.bashrc"
 echo 'export PYTHONPATH="$PYTHONPATH:$HOME/zephyr/scripts/west_commands"' >> "$HOME/.bashrc"
 # Add clover binaries to path
 echo 'export PATH="$PATH:$HOME/clover/bin"' >> "$HOME/.bashrc"
+# Force Zephyr SDK usage
+echo 'export ZEPHYR_TOOLCHAIN_VARIANT=zephyr' >> "$HOME/.bashrc"
 EOF
