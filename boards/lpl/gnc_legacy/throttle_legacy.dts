@@ -23,6 +23,42 @@ LPL throttle dev 2.5 PCB, from spring/summer 2025.
 		led-gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
 		blink-period-ms = <1000>;
 	};
+
+	pt201 {
+		compatible = "pt";
+		io-channels = <&adc1 7>; // A0 -> AD_B1_02 -> ADC0,7
+	};
+
+	pt202 {
+		compatible = "pt";
+		io-channels = <&adc1 8>; // A1 -> AD_B1_03 -> ADC0,8
+	};
+};
+
+&adc1 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		//		zephyr,input-positive = <NRF_SAADC_AIN0>; /* P0.02 for nRF52xx, P0.04 for nRF5340 */
+		zephyr,resolution = <12>; // Max for chip
+		zephyr,oversampling = <5>; // 32x averaging
+	};
+
+	channel@8 {
+		reg = <8>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		//		zephyr,input-positive = <NRF_SAADC_AIN0>; /* P0.02 for nRF52xx, P0.04 for nRF5340 */
+		zephyr,resolution = <12>; // Max for chip
+		zephyr,oversampling = <5>; // 32x averaging
+	};
 };
 
 &zephyr_udc0 {

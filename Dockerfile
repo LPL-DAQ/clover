@@ -112,10 +112,5 @@ RUN << EOF
 echo '. "$HOME/.venv/bin/activate"' >> "$HOME/.bashrc"
 # Populate zephyr vars
 echo '. $HOME/zephyr/zephyr-env.sh' >> "$HOME/.bashrc"
-# Add zephyr python path for IDE support
-echo 'export PYTHONPATH="$PYTHONPATH:$HOME/zephyr/scripts/west_commands"' >> "$HOME/.bashrc"
-# Add clover binaries to path
-echo 'export PATH="$PATH:$HOME/clover/bin"' >> "$HOME/.bashrc"
-# Force Zephyr SDK usage
-echo 'export ZEPHYR_TOOLCHAIN_VARIANT=zephyr' >> "$HOME/.bashrc"
 EOF
+ENV PYTHONPATH="$PYTHONPATH:$HOME/zephyr/scripts/west_commands" PATH="$PATH:$HOME/clover/bin" ZEPHYR_TOOLCHAIN_VARIANT=zephyr
