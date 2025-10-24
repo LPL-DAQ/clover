@@ -5,6 +5,6 @@
 #ifndef APP_SERVER_H
 #define APP_SERVER_H
 
-int serve_connections();
+void serve_connections();
 
 #endif //APP_SERVER_H

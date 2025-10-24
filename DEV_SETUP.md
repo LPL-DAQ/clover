@@ -97,6 +97,12 @@ quickly flashing as the application runs.
 To rebuild and reflash, simply press the reset button and run `west flash`. As long as TyCommander is open, it should
 reconnect serial automatically.
 
+To connect to the test command server, run:
+
+```shell
+
+```
+
 ## Troubleshooting
 
 ### Build fails due to `<...>.h`: No such file or directory

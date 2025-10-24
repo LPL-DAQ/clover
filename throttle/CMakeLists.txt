@@ -14,5 +14,4 @@ message(STATUS "C compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "C++ compiler: ${CMAKE_CPP_COMPILER}")
 
 project(app)
-target_sources(app PRIVATE src/main.cpp)
-target_sources(app PRIVATE src/Server.cpp)
+add_subdirectory(src)
