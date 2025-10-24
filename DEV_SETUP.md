@@ -100,7 +100,7 @@ reconnect serial automatically.
 To connect to the test command server, run:
 
 ```shell
-
+nc 169.254.99.99 19690
 ```
 
 ## Troubleshooting
