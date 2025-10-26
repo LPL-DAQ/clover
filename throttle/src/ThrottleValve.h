@@ -14,5 +14,8 @@ int throttle_valve_start_calibrate();
 int throttle_valve_get_pos();
 //throttle_valve_move(???);
 
+int throttle_valve_move(double degrees, double timems);
+
+int throttle_testing();
 
 #endif //CLOVER_THROTTLEVALVE_H
