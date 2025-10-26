@@ -12,7 +12,7 @@
 #include <zephyr/net/net_pkt.h>
 
 #include "server.h"
-#include "ThrottleValve.h"
+#include "throttle_valve.h"
 
 extern "C" {
 #include <app/drivers/blink.h>
