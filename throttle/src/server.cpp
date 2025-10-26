@@ -12,6 +12,8 @@
 #include "Server.h"
 #include "guards/SocketGuard.h"
 
+#include <string>
+
 LOG_MODULE_REGISTER(Server, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define MAX_OPEN_CLIENTS 4
@@ -60,9 +62,21 @@ static void handle_client(void *p1_client_socket, void *, void *) {
         }
 
         LOG_INF("Got command: %s", command_buf);
-
+        
         if(strcmp(command_buf, "calibrate#") == 0) {
             throttle_valve_start_calibrate();
+        }
+        else if(strcmp(command_buf, "test#") == 0){
+            throttle_testing();
+        }
+        else if (std::string(command_buf).rfind("move", 0) == 0){
+            // Example input: "move90,1000#"
+            
+            std::string cmd = command_buf;
+
+            double degrees = std::stod(cmd.substr(4,2));
+            double timems = std::stod(cmd.substr(7,cmd.length()-7));
+            throttle_valve_move(degrees,timems);
         }
         else {
             LOG_WRN("Unknown command.");

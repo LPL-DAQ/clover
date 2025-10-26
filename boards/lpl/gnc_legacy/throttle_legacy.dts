@@ -9,6 +9,11 @@ LPL throttle dev 2.5 PCB, from spring/summer 2025.
 / {
 	model = "Throttle Legacy Board";
 
+	zephyr,user {
+		stepper-pul-gpios = <&gpio1 17 GPIO_ACTIVE_HIGH>;
+		stepper-dir-gpios = <&gpio1 18 GPIO_ACTIVE_HIGH>;
+	};
+
 	chosen {
 		zephyr,console = &cdc_acm_uart0;
 	};
@@ -22,6 +27,14 @@ LPL throttle dev 2.5 PCB, from spring/summer 2025.
 		compatible = "blink-gpio-led";
 		led-gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
 		blink-period-ms = <1000>;
+	};
+
+
+	stepper0: stepper {
+        compatible = "lpl,throttle-stepper";
+		pul-gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>; //pin 18
+        //pul-gpios = <&gpio1 17 GPIO_ACTIVE_HIGH>; //pin 18
+        dir-gpios = <&gpio1 18 GPIO_ACTIVE_HIGH>; //pin 14
 	};
 
 	pt201 {
