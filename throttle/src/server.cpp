@@ -8,7 +8,7 @@
 #include <zephyr/sys/errno_private.h>
 #include <zephyr/net/net_pkt.h>
 
-#include "ThrottleValve.h"
+#include "throttle_valve.h"
 #include "Server.h"
 #include "guards/SocketGuard.h"
 
@@ -62,7 +62,7 @@ static void handle_client(void *p1_client_socket, void *, void *) {
         }
 
         LOG_INF("Got command: %s", command_buf);
-        
+
         if(strcmp(command_buf, "calibrate#") == 0) {
             throttle_valve_start_calibrate();
         }
@@ -71,7 +71,7 @@ static void handle_client(void *p1_client_socket, void *, void *) {
         }
         else if (std::string(command_buf).rfind("move", 0) == 0){
             // Example input: "move90,1000#"
-            
+
             std::string cmd = command_buf;
 
             double degrees = std::stod(cmd.substr(4,2));

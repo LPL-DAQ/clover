@@ -2,7 +2,7 @@
 // Created by lpl on 10/24/25.
 //
 
-#include "ThrottleValve.h"
+#include "throttle_valve.h"
 
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
@@ -88,7 +88,7 @@ int throttle_testing(){
     int steps = test_period_us/(2*delay_us); // Number of steps to run for 5 seconds
     gpio_pin_set_dt(&dir_gpios, 0); // Set initial direction
     k_busy_wait(delay_us);
-    
+
     for (int i = 0; i < steps; i++) {
         gpio_pin_set_dt(&pul_gpios, 1);
         k_busy_wait(delay_us);
