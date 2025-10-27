@@ -29,7 +29,7 @@ int main(void) {
     blink_set_period_ms(blink, 1000u);
 
     // Serial over USB setup
-    if (usb_enable(NULL)) {
+    if (usb_enable(nullptr)) {
         LOG_ERR("USB is not enabled.");
         while (1);
     }
@@ -52,12 +52,6 @@ int main(void) {
     if (err) {
         LOG_ERR("Failed to initialize PTs");
         return 0;
-    }
-
-    while (1) {
-        pt_readings readings = pts_sample();
-        pts_log_readings(readings);
-        k_sleep(K_MSEC(200));
     }
 
     LOG_INF("Starting server");

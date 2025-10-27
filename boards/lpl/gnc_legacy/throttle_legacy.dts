@@ -45,8 +45,8 @@ To the find devicetree ADC channel for a teensy ADC pin:
     };
 
     zephyr,user {
-        stepper-pul-gpios = <&gpio3 22 GPIO_ACTIVE_HIGH>;
-        stepper-dir-gpios = <&gpio3 23 GPIO_ACTIVE_HIGH>;
+        stepper-pul-gpios = <&gpio1 17 GPIO_ACTIVE_HIGH>; // Pin 18
+        stepper-dir-gpios = <&gpio1 20 GPIO_ACTIVE_HIGH>; // Pin 40
 
         // HACK: For whatever reason the io-channels may be getting auto-sorted? Thus, we order our pt labels
         // corresponding to the sorted ascending order of ADC1 channels. The following corresonds to pins A0, A1, A3,
