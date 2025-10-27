@@ -1,8 +1,38 @@
 # Development Environment
 
-We use [Dev Containers](https://containers.dev/) for dependency management and consistent builds across all developer
-machines. This handles all test and build of firmware, but to flash microcontrollers, we require a host daemon,
-`flasherd` to cross the container barrier.
+The clover dev relies on [Dev Containers](https://containers.dev/) to maintain a consistent programming environment
+across all developer machines, regardless of operating system. This guide contains all setup necessary
+to 1) build and flash firmware, 2) run Python scripts for data processing or other utilities, and 3)
+contribute code.
+
+This guide is intended to be comprehensible for any engineer, even if they have limited programming
+background.
+
+## Local setup
+
+### Install Docker Desktop
+
+Docker Desktop provides a lightweight virtual machine-esque Linux environment for any desktop platform,
+which is the backing technology for Dev Containers. Install it
+as [this link](https://www.docker.com/products/docker-desktop/).
+
+### Install an IDE
+
+Dev Containers rely heavily on an IDE, or Integrated Development Environment, for a smooth experience.
+It is the primary means through which you'll write code and run programs.
+
+If you only need this environment for light programming and scripting, consider installing Visual Studio Code
+at [this link](https://code.visualstudio.com/download).
+
+If you are doing work in C++ with Zephyr, instead consider installing CLion
+from [this link](https://www.jetbrains.com/clion/download). Unlike Visual Studio Code,
+it includes first-party support for Zephyr and for embedded debugging toolchains. Although it is
+a paid app, they offer a free [education license](https://www.jetbrains.com/shop/eform/students) for university
+students.
+
+### Build flasherd
+
+flasherd is a program that runs in the background of your computer
 
 ## `flasherd` installation
 
@@ -101,6 +131,12 @@ To connect to the test command server, run:
 
 ```shell
 nc 169.254.99.99 19690
+```
+
+And to ensure the output is saved to a file, run:
+
+```shell
+nc 169.254.99.99 19690 | tee out.log
 ```
 
 ## Troubleshooting
