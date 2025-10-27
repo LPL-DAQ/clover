@@ -49,7 +49,7 @@ To the find devicetree ADC channel for a teensy ADC pin:
         stepper-dir-gpios = <&gpio3 23 GPIO_ACTIVE_HIGH>;
 
         pt-names = "pt201", "pt202", "pt203", "pt204";
-        io-channels = <&adc1 7>, <&adc1 8>, <&adc1 12>, <&adc1 11>; // TODO - Pins A2 and A3 appear to be swapped? Why?
+        io-channels = <&adc1 7>, <&adc1 8>, <&adc1 12>, <&adc1 11>;
     };
 
     chosen {
@@ -74,8 +74,8 @@ To the find devicetree ADC channel for a teensy ADC pin:
         group0 {
             pinmux = <&iomuxc_gpio_ad_b1_02_gpio1_io18>,
                      <&iomuxc_gpio_ad_b1_03_gpio1_io19>,
-                     <&iomuxc_gpio_ad_b1_07_gpio1_io23>,
-                     <&iomuxc_gpio_ad_b1_06_gpio1_io22>;
+                     <&iomuxc_gpio_ad_b1_06_gpio1_io22>,
+                     <&iomuxc_gpio_ad_b1_07_gpio1_io23>;
             bias-pull-up;
             drive-strength = "r0-6";
             slew-rate = "slow";
