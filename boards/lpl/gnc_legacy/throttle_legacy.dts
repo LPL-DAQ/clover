@@ -48,8 +48,11 @@ To the find devicetree ADC channel for a teensy ADC pin:
         stepper-pul-gpios = <&gpio3 22 GPIO_ACTIVE_HIGH>;
         stepper-dir-gpios = <&gpio3 23 GPIO_ACTIVE_HIGH>;
 
-        pt-names = "pt201", "pt202", "pt203", "pt204";
-        io-channels = <&adc1 7>, <&adc1 8>, <&adc1 12>, <&adc1 11>;
+        // HACK: For whatever reason the io-channels may be getting auto-sorted? Thus, we order our pt labels
+        // corresponding to the sorted ascending order of ADC1 channels. The following corresonds to pins A0, A1, A3,
+        // and A2. We really ought investigate further.
+        pt-names = "pt201", "pt202", "pt204", "pt203";
+        io-channels = <&adc1 7>, <&adc1 8>, <&adc1 11>, <&adc1 12>;
     };
 
     chosen {
@@ -74,8 +77,8 @@ To the find devicetree ADC channel for a teensy ADC pin:
         group0 {
             pinmux = <&iomuxc_gpio_ad_b1_02_gpio1_io18>,
                      <&iomuxc_gpio_ad_b1_03_gpio1_io19>,
-                     <&iomuxc_gpio_ad_b1_07_gpio1_io23>,
-                     <&iomuxc_gpio_ad_b1_06_gpio1_io22>;
+                     <&iomuxc_gpio_ad_b1_06_gpio1_io22>,
+                     <&iomuxc_gpio_ad_b1_07_gpio1_io23>;
             bias-pull-up;
             drive-strength = "r0-6";
             slew-rate = "slow";
