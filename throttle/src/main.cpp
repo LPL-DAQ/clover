@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2021 Nordic Semiconductor ASA
- * SPDX-License-Identifier: Apache-2.0
- */
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/uart.h>
@@ -13,6 +9,7 @@
 
 #include "server.h"
 #include "throttle_valve.h"
+#include "pts.h"
 
 extern "C" {
 #include <app/drivers/blink.h>
@@ -24,9 +21,17 @@ BUILD_ASSERT(DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart),
              "Console device is not ACM CDC UART device");
 
 int main(void) {
+    // Status LED
+    const struct device *blink = DEVICE_DT_GET(DT_NODELABEL(blink_led));
+    if (!device_is_ready(blink)) {
+        return 0;
+    }
+    blink_set_period_ms(blink, 1000u);
+
     // Serial over USB setup
     if (usb_enable(NULL)) {
-        return 0;
+        LOG_ERR("USB is not enabled.");
+        while (1);
     }
     const struct device *usb_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
     uint32_t dtr = 0;
@@ -35,17 +40,29 @@ int main(void) {
         k_sleep(K_MSEC(100));
     }
 
-    // Status LED
-    const struct device *blink = DEVICE_DT_GET(DT_NODELABEL(blink_led));
-    if (!device_is_ready(blink)) {
-        LOG_ERR("Blink LED not ready");
+    LOG_INF("Initializing throttle valve");
+    int err = throttle_valve_init();
+    if (err) {
+        LOG_ERR("Failed to initialize throttle valve");
         return 0;
     }
-    blink_set_period_ms(blink, 1000u);
-    LOG_INF("hello there!");
 
-    throttle_valve_init();
+    LOG_INF("Initializing PTs");
+    err = pts_init();
+    if (err) {
+        LOG_ERR("Failed to initialize PTs");
+        return 0;
+    }
 
+    while (1) {
+        pt_readings readings = pts_sample();
+        pts_log_readings(readings);
+        k_sleep(K_MSEC(200));
+    }
+
+    LOG_INF("Starting server");
     serve_connections();
+
+    while (1);
 }
 

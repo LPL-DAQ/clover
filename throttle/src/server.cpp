@@ -1,7 +1,3 @@
-//
-// Created by lpl on 10/23/25.
-//
-
 #include <cctype>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/socket.h>
@@ -11,6 +7,7 @@
 #include "throttle_valve.h"
 #include "Server.h"
 #include "guards/SocketGuard.h"
+#include "pts.h"
 
 #include <string>
 
@@ -22,8 +19,9 @@ LOG_MODULE_REGISTER(Server, CONFIG_LOG_DEFAULT_LEVEL);
 /// array to find an open slot.
 K_SEM_DEFINE(num_open_connections, MAX_OPEN_CLIENTS, MAX_OPEN_CLIENTS);
 
-K_MUTEX_DEFINE(has_thread_lock);
 bool has_thread[MAX_OPEN_CLIENTS] = {false};
+K_MUTEX_DEFINE(has_thread_lock);
+
 static k_thread client_threads[MAX_OPEN_CLIENTS] = {nullptr};
 #define CONNECTION_THREAD_STACK_SIZE (4 * 1024)
 K_THREAD_STACK_ARRAY_DEFINE(client_stacks, MAX_OPEN_CLIENTS, CONNECTION_THREAD_STACK_SIZE);
@@ -62,23 +60,24 @@ static void handle_client(void *p1_client_socket, void *, void *) {
         }
 
         LOG_INF("Got command: %s", command_buf);
+        std::string command(command_buf); // TODO: Heap allocation? perhaps stick with annoying cstring?
 
-        if(strcmp(command_buf, "calibrate#") == 0) {
+        if (command == "calibrate#") {
             throttle_valve_start_calibrate();
-        }
-        else if(strcmp(command_buf, "test#") == 0){
+        } else if (command == "test#") {
             throttle_testing();
-        }
-        else if (std::string(command_buf).rfind("move", 0) == 0){
+        } else if (command.starts_with("move") == 0) {
             // Example input: "move90,1000#"
 
-            std::string cmd = command_buf;
+            double degrees = std::stod(command.substr(4, 2));
+            double timems = std::stod(command.substr(7, command.length() - 7));
+            throttle_valve_move(degrees, timems);
+        } else if (command == "samplepts#") {
+            // Example input: samplepts#
 
-            double degrees = std::stod(cmd.substr(4,2));
-            double timems = std::stod(cmd.substr(7,cmd.length()-7));
-            throttle_valve_move(degrees,timems);
-        }
-        else {
+            pt_readings readings = pts_sample();
+            pts_log_readings(readings);
+        } else {
             LOG_WRN("Unknown command.");
         }
     }

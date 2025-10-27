@@ -1,7 +1,3 @@
-//
-// Created by lpl on 10/24/25.
-//
-
 #include <zephyr/net/socket.h>
 #include "SocketGuard.h"
 
