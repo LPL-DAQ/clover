@@ -1,7 +1,3 @@
-//
-// Created by lpl on 10/24/25.
-//
-
 #include "throttle_valve.h"
 
 #include <zephyr/device.h>
@@ -15,7 +11,7 @@
 static const struct gpio_dt_spec pul_gpios = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_pul_gpios);
 static const struct gpio_dt_spec dir_gpios = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_dir_gpios);
 
-LOG_MODULE_REGISTER(ThrottleValve, CONFIG_LOG_DEFAULT_LEVEL);
+LOG_MODULE_REGISTER(throttle_valve, CONFIG_LOG_DEFAULT_LEVEL);
 
 int throttle_valve_init() {
     // do some initializaiton work here?

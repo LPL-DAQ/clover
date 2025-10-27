@@ -1,7 +1,3 @@
-//
-// Created by lpl on 10/24/25.
-//
-
 #ifndef CLOVER_THROTTLEVALVE_H
 #define CLOVER_THROTTLEVALVE_H
 
