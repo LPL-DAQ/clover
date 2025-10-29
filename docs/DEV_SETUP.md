@@ -9,34 +9,53 @@ This guide is intended to be comprehensible for any engineer, even if they have 
 background.
 
 ## Local setup
-
+    
 ### Install Docker Desktop
 
 Docker Desktop provides a lightweight virtual machine-esque Linux environment for any desktop platform,
 which is the backing technology for Dev Containers. Install it
 as [this link](https://www.docker.com/products/docker-desktop/).
 
+Open Docker Desktop, and click through the setup. **Do not create an account if it asks you, instead click skip.**
+
+![Alt text](docker-setup.png)
+
 ### Install an IDE
 
 Dev Containers rely heavily on an IDE, or Integrated Development Environment, for a smooth experience.
 It is the primary means through which you'll write code and run programs.
 
+If you are doing work in C++ with Zephyr, I highly recommend installing CLion, which you may do
+from [this link](https://www.jetbrains.com/clion/download). Unlike Visual Studio Code,
+it includes first-party support for Zephyr and for embedded debugging toolchains. Although it is
+a paid app, they offer a free [educational license](https://www.jetbrains.com/shop/eform/students) for university
+students.
+
 If you only need this environment for light programming and scripting, consider installing Visual Studio Code
 at [this link](https://code.visualstudio.com/download).
 
-If you are doing work in C++ with Zephyr, instead consider installing CLion
-from [this link](https://www.jetbrains.com/clion/download). Unlike Visual Studio Code,
-it includes first-party support for Zephyr and for embedded debugging toolchains. Although it is
-a paid app, they offer a free [education license](https://www.jetbrains.com/shop/eform/students) for university
-students.
+### Install git
+
+git is a tool used to manage software collaboration. Install it [here](https://git-scm.com/install/). 
 
 ### Build flasherd
 
-flasherd is a program that runs in the background of your computer
+flasherd is a program that runs in the background of your computer, communicating with the inside of the dev container to send flash commands to microcontrollers.
 
-## `flasherd` installation
+#### (Windows only) Install build dependencies
 
-First, install Rust via [rustup](https://rustup.rs/).
+Follow [these instructions](https://learn.microsoft.com/en-us/cpp/build/vscpp-step-0-installation?view=msvc-170#visual-studio-2022-installation) to install the Microsoft Visual Studio installer.
+
+Run the installer, and either install it from scratch or modify an existing installation. Under "individual
+components," ensure that you have Windows 11 SDK and Microsoft Visual C++ for x86_64 installed.
+
+![MSVC SDK](msvc-sdk.png)
+
+![MSVC compiler](msvc-compiler.png)
+
+#### Install Rust
+
+Install Rust via [rustup](https://rustup.rs/). Use all defaults for the installation.
 
 Then, relaunch this repository in a dev container. Your IDE should automatically run a command to build and run
 `flasherd`. IntelliJ on Windows doesn't do this correctly, so you may need to run it yourself from the `clover`
