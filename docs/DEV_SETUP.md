@@ -9,16 +9,17 @@ This guide is intended to be comprehensible for any engineer, even if they have 
 background.
 
 ## Local setup
-    
+
 ### Install Docker Desktop
 
 Docker Desktop provides a lightweight virtual machine-esque Linux environment for any desktop platform,
 which is the backing technology for Dev Containers. Install it
 as [this link](https://www.docker.com/products/docker-desktop/).
 
+=======
 Open Docker Desktop, and click through the setup. **Do not create an account if it asks you, instead click skip.**
 
-![Alt text](docker-setup.png)
+![Docker setup](docker-setup.png)
 
 ### Install an IDE
 
@@ -40,11 +41,21 @@ git is a tool used to manage software collaboration. Install it [here](https://g
 
 ### Build flasherd
 
-flasherd is a program that runs in the background of your computer, communicating with the inside of the dev container to send flash commands to microcontrollers.
+flasherd is a program that runs in the background of your computer
+=======
+### Install git
+
+git is a tool used to manage software collaboration. Install it [here](https://git-scm.com/install/).
+
+### Build flasherd
+
+flasherd is a program that runs in the background of your computer, communicating with the inside of the dev container
+to send flash commands to microcontrollers.
 
 #### (Windows only) Install build dependencies
 
-Follow [these instructions](https://learn.microsoft.com/en-us/cpp/build/vscpp-step-0-installation?view=msvc-170#visual-studio-2022-installation) to install the Microsoft Visual Studio installer.
+Follow [these instructions](https://learn.microsoft.com/en-us/cpp/build/vscpp-step-0-installation?view=msvc-170#visual-studio-2022-installation)
+to install the Microsoft Visual Studio installer.
 
 Run the installer, and either install it from scratch or modify an existing installation. Under "individual
 components," ensure that you have Windows 11 SDK and Microsoft Visual C++ for x86_64 installed.

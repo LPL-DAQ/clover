@@ -16,4 +16,10 @@ void throttle_valve_set_open();
 
 void throttle_valve_set_closed();
 
+void throttle_valve_enable();
+
+void throttle_valve_disable();
+
+bool throttle_valve_is_enabled();
+
 #endif //CLOVER_THROTTLEVALVE_H

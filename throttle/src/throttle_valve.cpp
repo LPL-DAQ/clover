@@ -10,6 +10,7 @@
 #define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
 static const struct gpio_dt_spec pul_gpios = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_pul_gpios);
 static const struct gpio_dt_spec dir_gpios = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_dir_gpios);
+static const struct gpio_dt_spec ena_gpios = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_ena_gpios);
 
 LOG_MODULE_REGISTER(throttle_valve, CONFIG_LOG_DEFAULT_LEVEL);
 
@@ -29,6 +30,7 @@ int throttle_valve_init() {
 
     gpio_pin_configure_dt(&pul_gpios, GPIO_OUTPUT_INACTIVE);
     gpio_pin_configure_dt(&dir_gpios, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&ena_gpios, GPIO_OUTPUT_ACTIVE);
 
     LOG_INF("Throttle valve initialized.");
 
@@ -56,7 +58,7 @@ int throttle_valve_move(double delta_degrees, double timems) {
     int steps_to_move = static_cast<int>(delta_degrees / DEG_PER_STEP);
     if (steps_to_move < 0) steps_to_move = -steps_to_move;
     if (steps_to_move == 0) {
-        k_busy_wait(1000*timems);
+        k_busy_wait(1000 * timems);
         return 0;
     }
 
@@ -123,4 +125,16 @@ void throttle_valve_set_open() {
 
 void throttle_valve_set_closed() {
     steps = 0;
+}
+
+void throttle_valve_enable() {
+    gpio_pin_set_dt(&ena_gpios, 1);
+}
+
+void throttle_valve_disable() {
+    gpio_pin_set_dt(&ena_gpios, 0);
+}
+
+bool throttle_valve_is_enabled() {
+    return gpio_pin_get_dt(&ena_gpios) == 0;
 }

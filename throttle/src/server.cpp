@@ -165,11 +165,24 @@ static void handle_client(void *p1_client_socket, void *, void *) {
         } else if (command == "getpts#") {
             pt_readings readings = pts_sample();
             std::string payload =
-                    "pt201: " + std::to_string(readings.pt201) + ", pt202: " + std::to_string(readings.pt201) +
-                    ", pt203: " + std::to_string(readings.pt201) + ", pt204: " + std::to_string(readings.pt201) + "\n";
+                    "pt203 " + std::to_string(readings.pt204) + ", pt203: " + std::to_string(readings.pt203) +
+                    ", ptf401: " + std::to_string(readings.ptf401) + ", pt102: " + std::to_string(readings.pt102) +
+                    "\n";
             int err = send_fully(client_guard.socket, payload.c_str(), std::ssize(payload));
             if (err) {
                 LOG_ERR("Failed to fully send pt readings: err %d", err);
+            }
+        } else if (command == "valveenable#") {
+            throttle_valve_enable();
+            send_string_fully(client_guard.socket, "Done enabling.\n");
+        } else if (command == "valvedisable#") {
+            throttle_valve_disable();
+            send_string_fully(client_guard.socket, "Done disabling.\n");
+        } else if (command == "valvegetenabled#") {
+            if (throttle_valve_is_enabled()) {
+                send_string_fully(client_guard.socket, "Valve is enabled.\n");
+            } else {
+                send_string_fully(client_guard.socket, "Valve is disabled.\n");
             }
         } else {
             LOG_WRN("Unknown command.");
