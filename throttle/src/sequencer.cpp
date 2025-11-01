@@ -26,9 +26,9 @@ static int end_millis;
 struct data_row {
     float time;
     float motor_pos;
-    float pt201;
-    float pt202;
     float pt203;
+    float pt204;
+    float ptf401;
 };
 static std::array<data_row, 4000> data_buffer;
 
@@ -86,9 +86,9 @@ int sequencer_start_trace(int sock, int gap, std::vector<double> bps) {
                 .time = static_cast<float>(static_cast<double>(ns_since_start) /
                                            1'000'000'000.0), // to us lossy, then to sec
                 .motor_pos = static_cast<float>(curr_degrees),
-                .pt201 = static_cast<float>(readings.pt201),
-                .pt202 = static_cast<float>(readings.pt202),
-                .pt203 = static_cast<float>(readings.pt203)
+                .pt203 = static_cast<float>(readings.pt203),
+                .pt204 = static_cast<float>(readings.pt204),
+                .ptf401 = static_cast<float>(readings.ptf401)
         };
 
 
@@ -97,7 +97,7 @@ int sequencer_start_trace(int sock, int gap, std::vector<double> bps) {
     }
 
     {
-        std::string line = "time,valve_pos,pt201,pt202,pt203";
+        std::string line = "time,valve_pos,pt203,pt204,ptf401\n";
         int bytes_sent = 0;
         while (bytes_sent < std::ssize(line)) {
             int ret = zsock_send(sock, line.c_str() + bytes_sent, line.size() - bytes_sent, 0);
@@ -112,9 +112,9 @@ int sequencer_start_trace(int sock, int gap, std::vector<double> bps) {
     for (int i = 0; i < end_millis; ++i) {
         std::stringstream ss;
         ss.precision(8);
-        ss << std::fixed << data_buffer[i].time << ',' << data_buffer[i].motor_pos << ',' << data_buffer[i].pt201 << ','
-           << data_buffer[i].pt202
-           << ',' << data_buffer[i].pt203 << '\n';
+        ss << std::fixed << data_buffer[i].time << ',' << data_buffer[i].motor_pos << ',' << data_buffer[i].pt203 << ','
+           << data_buffer[i].pt204
+           << ',' << data_buffer[i].ptf401 << '\n';
         std::string line = ss.str();
         int bytes_sent = 0;
         while (bytes_sent < std::ssize(line)) {
