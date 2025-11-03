@@ -95,6 +95,9 @@ ${lplred} / /__${lplylw}/ ___${lplred}/ /__
 ${lplred}/____${lplylw}/_/  ${lplred}/____/
 ${lplbld}Welcome!${style_rst}"
 
+# Ensure path is correct for flasherd test
+export PATH="$PATH:/home/lpl/clover/bin"
+
 # Show flasherd status
 if $HOME/clover/scripts/flasherd-connection-test.sh > /dev/null 2>&1; then
     grnbld="\e[32;1m"
