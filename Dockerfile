@@ -117,4 +117,3 @@ echo '. "$HOME/.venv/bin/activate"' >> "$HOME/.bashrc"
 echo '. $HOME/zephyr/zephyr-env.sh' >> "$HOME/.bashrc"
 EOF
 ENV PYTHONPATH="$PYTHONPATH:/home/lpl/zephyr/scripts/west_commands" PATH="$PATH:/home/lpl/clover/bin" ZEPHYR_TOOLCHAIN_VARIANT=zephyr
-# updated
