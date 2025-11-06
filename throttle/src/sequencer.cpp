@@ -20,7 +20,7 @@ static constexpr int MAX_BREAKPOINTS = 20;
 
 K_MUTEX_DEFINE(sequence_lock);
 static int gap_millis;
-static std::vector<double> breakpoints;
+static std::vector<float> breakpoints;
 static int end_millis;
 
 struct data_row {
@@ -32,7 +32,7 @@ struct data_row {
 };
 static std::array<data_row, 4000> data_buffer;
 
-int sequencer_start_trace(int sock, int gap, std::vector<double> bps) {
+int sequencer_start_trace(int sock, int gap, std::vector<float> bps) {
     if (bps.size() > MAX_BREAKPOINTS) {
         LOG_ERR("Too many breakpoints: %u", bps.size());
         return 1;
@@ -43,7 +43,7 @@ int sequencer_start_trace(int sock, int gap, std::vector<double> bps) {
 
     LOG_INF("Got breakpoints:");
     for (int i = 0; i < std::ssize(bps); ++i) {
-        LOG_INF("t=%d ms, bp=%f", i * gap, bps[i]);
+        LOG_INF("t=%d ms, bp=%f", i * gap, static_cast<float>(bps[i]));
     }
 
 //    int err = k_mutex_lock(&sequence_lock, K_NO_WAIT);
@@ -68,23 +68,21 @@ int sequencer_start_trace(int sock, int gap, std::vector<double> bps) {
             LOG_WRN("Low index is less than 0, how is that possible? curr: %d, gap: %d", next_millis, gap_millis);
             low_bp_index = 0;
         }
-        double target;
+        float target;
         if (high_bp_index >= std::ssize(breakpoints)) {
             target = breakpoints.back();
         } else {
-            double tween = static_cast<double>(next_millis - (low_bp_index * gap_millis)) / gap_millis;
+            float tween = static_cast<float>(next_millis - (low_bp_index * gap_millis)) / gap_millis;
             target = breakpoints[low_bp_index] + (breakpoints[high_bp_index] - breakpoints[low_bp_index]) * tween;
         }
 
-        double curr_degrees = throttle_valve_get_pos();
-        double delta = target - curr_degrees;
+        float curr_degrees = throttle_valve_get_pos();
         pt_readings readings = pts_sample();
 
         uint64_t since_start = k_cycle_get_64() - start_time;
         uint64_t ns_since_start = k_cyc_to_ns_floor64(since_start);
         data_buffer[next_millis] = data_row{
-                .time = static_cast<float>(static_cast<double>(ns_since_start) /
-                                           1'000'000'000.0), // to us lossy, then to sec
+                .time = static_cast<float>(ns_since_start) / 1e9f, // to us lossy, then to sec
                 .motor_pos = static_cast<float>(curr_degrees),
                 .pt203 = static_cast<float>(readings.pt203),
                 .pt204 = static_cast<float>(readings.pt204),
@@ -93,8 +91,10 @@ int sequencer_start_trace(int sock, int gap, std::vector<double> bps) {
 
 
         // move to target
-        throttle_valve_move(delta, 1);
+        throttle_valve_move(target, 0.001);
+        k_sleep(K_MSEC(1));
     }
+    throttle_valve_stop();
 
     {
         std::string line = "time,valve_pos,pt203,pt204,ptf401\n";

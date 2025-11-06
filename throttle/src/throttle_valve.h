@@ -6,14 +6,14 @@ int throttle_valve_init();
 
 int throttle_valve_start_calibrate();
 
-double throttle_valve_get_pos();
+float throttle_valve_get_pos();
 
-int throttle_valve_move(double degrees, double timems);
+int throttle_valve_move(float degrees, float time);
 
-int throttle_testing();
+void throttle_valve_stop();
 
-void throttle_valve_set_open();
+int throttle_valve_set_open();
 
-void throttle_valve_set_closed();
+int throttle_valve_set_closed();
 
 #endif //CLOVER_THROTTLEVALVE_H

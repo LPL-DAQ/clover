@@ -86,9 +86,6 @@ static void handle_client(void *p1_client_socket, void *, void *) {
         if (command == "calibrate#") {
             throttle_valve_start_calibrate();
             send_string_fully(client_guard.socket, "Done calibrating\n");
-        } else if (command == "test#") {
-            throttle_testing();
-            send_string_fully(client_guard.socket, "Done test\n");
         } else if (command == "resetopen#") {
             // Sets the current position as 90 deg WITHOUT moving the valve.
             throttle_valve_set_open();
@@ -103,7 +100,7 @@ static void handle_client(void *p1_client_socket, void *, void *) {
             double degrees = std::stod(command.substr(4, 3));
             double timems = std::stod(command.substr(8, command.length() - 8));
             LOG_INF("Commanding change of %f deg in %f ms", degrees, timems);
-            throttle_valve_move(degrees, timems);
+            throttle_valve_move(degrees, timems / 1000.0);
             send_string_fully(client_guard.socket, "Done move\n");
 
         } else if (command.starts_with("seq")) {
@@ -116,7 +113,7 @@ static void handle_client(void *p1_client_socket, void *, void *) {
 
             // Mini token parser
             int gap = 0;
-            std::vector<double> breakpoints{throttle_valve_get_pos()};
+            std::vector<float> breakpoints{throttle_valve_get_pos()};
             bool wrote_gap = false;
             int curr_token = 0;
             for (int i = 3; i < std::ssize(command) - 1; ++i) {
