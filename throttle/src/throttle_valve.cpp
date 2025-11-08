@@ -5,9 +5,25 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/pwm.h>
 
 #define STEPPER0_NODE DT_NODELABEL(stepper0)
 #define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
+
+#if !DT_NODE_HAS_PROP(DT_PATH(zephyr_user), pwms)
+#error "/zephyr,user is missing 'pwms' (two entries expected)"
+#endif
+#if !DT_NODE_HAS_STATUS(DT_NODELABEL(flexpwm4_pwm2), okay)
+#error "&flexpwm4_pwm2 is not 'okay' -> PWM device won't instantiate"
+#endif
+
+/* Fetch by NAME (uses pwm-names = "tvc_x","tvc_y") */
+static const pwm_dt_spec SERVO_X =
+    PWM_DT_SPEC_GET_BY_NAME(DT_PATH(zephyr_user), tvc_x);
+static const pwm_dt_spec SERVO_Y =
+    PWM_DT_SPEC_GET_BY_NAME(DT_PATH(zephyr_user), tvc_y);
+
+
 static const struct gpio_dt_spec pul_gpios = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_pul_gpios);
 static const struct gpio_dt_spec dir_gpios = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_dir_gpios);
 
@@ -21,6 +37,7 @@ volatile int steps = 0;
 
 int throttle_valve_init() {
     LOG_INF("Initializing throttle valve...");
+    (void)SERVO_X;    (void)SERVO_Y;
 
     if (!device_is_ready(pul_gpios.port) || !device_is_ready(dir_gpios.port)) {
         LOG_ERR("GPIO device(s) not ready");
