@@ -10,18 +10,14 @@
 #define STEPPER0_NODE DT_NODELABEL(stepper0)
 #define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
 
-#if !DT_NODE_HAS_PROP(DT_PATH(zephyr_user), pwms)
-#error "/zephyr,user is missing 'pwms' (two entries expected)"
-#endif
-#if !DT_NODE_HAS_STATUS(DT_NODELABEL(flexpwm4_pwm2), okay)
-#error "&flexpwm4_pwm2 is not 'okay' -> PWM device won't instantiate"
-#endif
+
 
 /* Fetch by NAME (uses pwm-names = "tvc_x","tvc_y") */
 static const pwm_dt_spec SERVO_X =
-    PWM_DT_SPEC_GET_BY_NAME(DT_PATH(zephyr_user), tvc_x);
+    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 0);
 static const pwm_dt_spec SERVO_Y =
-    PWM_DT_SPEC_GET_BY_NAME(DT_PATH(zephyr_user), tvc_y);
+    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 1);
+
 
 
 static const struct gpio_dt_spec pul_gpios = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_pul_gpios);

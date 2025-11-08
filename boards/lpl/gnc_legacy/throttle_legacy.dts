@@ -52,12 +52,8 @@ To the find devicetree ADC channel for a teensy ADC pin:
 		stepper-ena-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>; // Pin 4
 
 		/* SERVOS: two PWM specs living next to your stepper props */
-		pwms =
-				<&flexpwm4_pwm2 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>, /* tvc_x: pin 2 / PWMA2 */
-				<&flexpwm4_pwm2 1 PWM_MSEC(20) PWM_POLARITY_NORMAL>; /* tvc_y: pin 3 / PWMB2 */
-		pwm-names = "tvc_x", "tvc_y";
-
-		/* Optional: expose your min/max as DT props (nice for tuning) */
+		pwms = <&pca9685 15 PWM_MSEC(20)>,
+			   <&pca9685 14 PWM_MSEC(20)>;
 		servo-min-pulse-us = <1000>;
 		servo-max-pulse-us = <2000>;
 
@@ -85,16 +81,18 @@ To the find devicetree ADC channel for a teensy ADC pin:
 
 };
 
-// docs: https://www.pjrc.com/store/teensy41.html
-/* Enable eFlexPWM4 submodule 2 and bind both pin groups */
-&flexpwm4 {
-	status = "okay";
-};
-
-&flexpwm4_pwm2 {
+/* I²C1 on Teensy 4.1 is SCL=pin 19, SDA=pin 18. */
+&lpi2c1 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pwm4_2_a_emc_04 &pwm4_2_b_emc_05>;
+	pinctrl-0 = <&i2c1_default>;
 	status = "okay";
+
+	pca9685: pca9685@40 {
+		compatible = "nxp,pca9685-pwm";
+		reg = <0x40>;              /* default PCA9685 address, change if A0..A5 strapped */
+		#pwm-cells = <2>;          /* channel, period, flags per binding */
+		status = "okay";
+	};
 };
 
 // Docs: https://docs.zephyrproject.org/latest/build/dts/api/bindings/pinctrl/nxp%2Cmcux-rt-pinctrl.html
@@ -112,21 +110,18 @@ To the find devicetree ADC channel for a teensy ADC pin:
 		};
 	};
 
-	/* Teensy 4.1: Pin 2 (GPIO_EMC_04) = FLEXPWM4 PWMA2 */
-	/* Teensy pin 2 = GPIO_EMC_04 -> FlexPWM4 PWMA2 */
-	pwm4_2_a_emc_04: pwm4_2_a_emc_04 {
-		pinmux = <&iomuxc_gpio_emc_04_flexpwm4_pwma2>;
-		drive-strength = "r0-6";
-		slew-rate = "fast";
-		bias-disable;
-	};
+	i2c1_default: i2c1_default {
+		/* Teensy 4.1 default I2C: AD_B1_00=SCL, AD_B1_01=SDA */
+		pinmux = <&iomuxc_gpio_ad_b1_00_lpi2c1_scl
+				  &iomuxc_gpio_ad_b1_01_lpi2c1_sda>;
 
-	/* Teensy pin 3 = GPIO_EMC_05 -> FlexPWM4 PWMB2 */
-	pwm4_2_b_emc_05: pwm4_2_b_emc_05 {
-		pinmux = <&iomuxc_gpio_emc_05_flexpwm4_pwmb2>;
+		/* Reasonable electrical settings for I2C */
+		drive-open-drain;         /* ODE=1 */
+		bias-pull-up;             /* enable weak internal PU if you need it;
+                                     OK to drop this if your PCA9685 board already
+                                     has external pull-ups */
+		slew-rate = "slow";
 		drive-strength = "r0-6";
-		slew-rate = "fast";
-		bias-disable;
 	};
 };
 
