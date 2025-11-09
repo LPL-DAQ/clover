@@ -6,7 +6,7 @@ class SocketGuard {
 public:
     int socket;
 
-    SocketGuard(int s);
+    explicit SocketGuard(int s);
 
     ~SocketGuard();
 };
