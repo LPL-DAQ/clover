@@ -5,6 +5,8 @@
 
 int sequencer_prepare(int gap, std::vector<float> bps);
 
-int sequencer_start_trace(int sock);
+int sequencer_start_trace();
+
+void sequencer_set_data_recipient(int sock);
 
 #endif //CLOVER_SEQUENCER_H

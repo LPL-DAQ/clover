@@ -43,7 +43,7 @@ int send_fully(int sock, const char *buf, int len) {
     return 0;
 }
 
-static int send_string_fully(int sock, const std::string &payload) {
+int send_string_fully(int sock, const std::string &payload) {
     return send_fully(sock, payload.c_str(), std::ssize(payload));
 }
 
@@ -167,17 +167,28 @@ static void handle_client(void *p1_client_socket, void *, void *) {
             if (err) {
                 LOG_ERR("Failed to fully send pt readings: err %d", err);
             }
-        } else if (command == "START#" || command == "start#") {
+        } else if (command == "START#") {
             // Triggered in DAQ sequencer.
-            send_string_fully(client_guard.socket, ">>>>SEQ START<<<<\n");
-            int err = sequencer_start_trace(client_guard.socket);
-            send_string_fully(client_guard.socket, ">>>>SEQ END<<<<\n");
+            LOG_INF("Triggering sequence from DAQ.");
+            int err = sequencer_start_trace();
+            if (err) {
+                LOG_ERR("Failed to run sequence: err %d", err);
+                continue;
+            }
+        } else if (command == "listen#") {
+            send_string_fully(client_guard.socket,
+                              "Don't send additional commands till the sequence is done, lest the output be mangled.\n");
+            send_string_fully(client_guard.socket, "Listening for sequence...\n");
+            sequencer_set_data_recipient(client_guard.socket);
+        } else if (command == "dstart#") {
+            // Triggered manually.
+            sequencer_set_data_recipient(client_guard.socket);
+            int err = sequencer_start_trace();
             if (err) {
                 LOG_ERR("Failed to run sequence: err %d", err);
                 send_string_fully(client_guard.socket, "Failed to run sequence\n");
                 continue;
             }
-
             send_string_fully(client_guard.socket, "Done sequence.\n");
         } else {
             LOG_WRN("Unknown command.");
