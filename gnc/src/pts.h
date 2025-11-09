@@ -12,15 +12,15 @@
  *
  * We will generate the following:
  * struct pt_readings {
- *     double pt201;
- *     double pt202;
+ *     float pt201;
+ *     float pt202;
  *     ...
  * }
  */
 
 #define USER_NODE DT_PATH(zephyr_user)
 
-#define CLOVER_PTS_DT_TO_READINGS_FIELD(node_id, prop, idx) double DT_STRING_TOKEN_BY_IDX(node_id, prop, idx);
+#define CLOVER_PTS_DT_TO_READINGS_FIELD(node_id, prop, idx) float DT_STRING_TOKEN_BY_IDX(node_id, prop, idx);
 struct pt_readings {
     DT_FOREACH_PROP_ELEM(USER_NODE, pt_names, CLOVER_PTS_DT_TO_READINGS_FIELD)
 };

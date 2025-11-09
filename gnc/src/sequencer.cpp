@@ -5,10 +5,13 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/sys/cbprintf.h>
 #include <array>
-#include <string>
 #include <zephyr/net/socket.h>
-#include <sstream>
+#include <algorithm>
+#include <string>
+#include <cstdint>
+#include "server.h"
 
 LOG_MODULE_REGISTER(sequencer, CONFIG_LOG_DEFAULT_LEVEL);
 
@@ -17,7 +20,6 @@ constexpr uint64_t NSEC_PER_CONTROL_TICK = 1'000'000; // 1 ms
 static constexpr int MAX_BREAKPOINTS = 20;
 
 K_MUTEX_DEFINE(sequence_lock);
-K_SEM_DEFINE(control_sem, 0, 1); // Taken by sequence thread and granted when last count iter is reached.
 
 static int gap_millis;
 static std::vector<float> breakpoints;
@@ -26,16 +28,37 @@ volatile int step_count = 0;
 volatile int count_to = 0;
 uint64_t start_clock = 0;
 
-struct data_row {
+/// Data that ought be logged for each control loop iteration.
+struct control_iter_data {
     float time;
+    uint32_t queue_size;
+    float motor_target;
     float motor_pos;
+    float motor_velocity;
+    float motor_acceleration;
+    uint64_t nsec_per_pulse;
     float pt203;
     float pt204;
     float ptf401;
 };
-static std::array<data_row, 4000> data_buffer;
 
+/// Control loop iteration will enqueue data for broadcasting over ethernet by another thread.
+K_MSGQ_DEFINE(control_data_msgq, sizeof(control_iter_data), 100, 1);
+
+/// Performs one iteration of the control loop. This must execute very quickly, so any physical actions or
+/// interactions with peripherals should be asynchronous.
 static void step_control_loop(k_work *) {
+    // Last iter of control loop, execute cleanup tasks. step_count is [1, count_to] for normal iterations,
+    // and step_count == count_to+1 for the last cleanup iteration.
+    if (step_count > count_to) {
+        throttle_valve_stop();
+        // HACK: relinquish control for a little bit to allow client connection to flush data.
+        // There really ought to be a cleaner way to do this.
+        k_sleep(K_MSEC(100));
+        k_msgq_purge(&control_data_msgq); // Signals client connection that no more
+        return;
+    }
+
     int next_millis = step_count + 1;
 
     int low_bp_index = MIN(next_millis / gap_millis, std::ssize(breakpoints) - 1);
@@ -52,29 +75,43 @@ static void step_control_loop(k_work *) {
         target = breakpoints[low_bp_index] + (breakpoints[high_bp_index] - breakpoints[low_bp_index]) * tween;
     }
 
-    float curr_degrees = throttle_valve_get_pos();
-    pt_readings readings = pts_sample();
-
-    uint64_t since_start = k_cycle_get_64() - start_clock;
-    uint64_t ns_since_start = k_cyc_to_ns_floor64(since_start);
-    data_buffer[next_millis] = data_row{
-            .time = static_cast<float>(ns_since_start) / 1e9f, // to us lossy, then to sec
-            .motor_pos = static_cast<float>(curr_degrees),
-            .pt203 = static_cast<float>(readings.pt203),
-            .pt204 = static_cast<float>(readings.pt204),
-            .ptf401 = static_cast<float>(readings.ptf401)
-    };
 
     // move to target
     throttle_valve_move(target);
+
+    // Log current data
+    // TODO - this copies :/ can we put the message in place?
+    uint64_t since_start = k_cycle_get_64() - start_clock;
+    uint64_t ns_since_start = k_cyc_to_ns_floor64(since_start);
+    pt_readings readings = pts_sample();
+    control_iter_data iter_data = {
+            .time = static_cast<float>(ns_since_start) / 1e9f,
+            .queue_size = k_msgq_num_used_get(&control_data_msgq),
+            .motor_target = target,
+            .motor_pos = throttle_valve_get_pos(),
+            .motor_velocity = throttle_valve_get_velocity(),
+            .motor_acceleration = throttle_valve_get_acceleration(),
+            .nsec_per_pulse = throttle_valve_get_nsec_per_pulse(),
+            .pt203 = readings.pt203,
+            .pt204 = readings.pt204,
+            .ptf401 = readings.ptf401
+    };
+    int err = k_msgq_put(&control_data_msgq, &iter_data, K_NO_WAIT);
+    if (err) {
+        // Adding to msgq can only fail with -ENOMSG.
+        LOG_ERR("Control data queue is full! Data is being lost!!!");
+    }
 }
 
 K_WORK_DEFINE(control_loop, step_control_loop);
 
+/// ISR that schedules a control iteration in the work queue.
 static void control_loop_schedule(k_timer *timer) {
-    if (step_count >= count_to) {
+    // step_count is [0, count_to) during a normal iteration. step_count == count_to
+    // schedules the final iteration.
+    if (step_count > count_to) {
+        k_msgq_purge(&control_data_msgq);
         k_timer_stop(timer);
-        k_sem_give(&control_sem); // Return control to start_trace
         return;
     }
     k_work_submit(&control_loop);
@@ -103,7 +140,7 @@ int sequencer_start_trace(int sock) {
         LOG_INF("t=%d ms, bp=%f", i * gap_millis, static_cast<double>(breakpoints[i]));
     }
 
-    k_mutex_lock(&sequence_lock, K_NO_WAIT);
+    k_mutex_lock(&sequence_lock, K_FOREVER);
 
     step_count = 0;
     count_to = std::min((std::ssize(breakpoints) - 1) * gap_millis, 4000);
@@ -111,47 +148,47 @@ int sequencer_start_trace(int sock) {
     start_clock = k_cycle_get_64();
 
     // Start control iterations
-    k_timer_start(&control_loop_schedule_timer, K_NO_WAIT, K_NSEC(NSEC_PER_CONTROL_TICK));
-
-    // Await control iters, sem is granted by final tick of control timer.
-    k_sem_take(&control_sem, K_FOREVER);
-
-    // Halt valve
-    throttle_valve_stop();
+    k_timer_start(&control_loop_schedule_timer, K_NSEC(NSEC_PER_CONTROL_TICK), K_NSEC(NSEC_PER_CONTROL_TICK));
 
     // Print header
-    {
-        std::string line = "time,valve_pos,pt203,pt204,ptf401\n";
-        int bytes_sent = 0;
-        while (bytes_sent < std::ssize(line)) {
-            int ret = zsock_send(sock, line.c_str() + bytes_sent, line.size() - bytes_sent, 0);
-            if (ret < 0) {
-                LOG_ERR("Failed to dump data: err %d", ret);
-                return ret;
-            }
-            bytes_sent += ret;
+    const std::string header = "time,queue_size,motor_target,motor_pos,motor_velocity,motor_acceleration,pt203,pt204,ptf401\n";
+    int err = send_fully(sock, header.c_str(), std::ssize(header));
+    if (err) {
+        LOG_WRN("Failed to send header");
+    }
+
+    // Dump data as we get it. Connection client is preemptible while control sequence is in system workqueue
+    // (cooperative) so sending data should never block processing of control iter.
+    control_iter_data data = {0};
+    while (true) {
+        int err = k_msgq_get(&control_data_msgq, &data, K_FOREVER);
+        // -ENOMSG is sent when queue is purged to signal end of control seq. No other possible
+        // error as we are waiting forever.
+        if (err) {
+            break;
+        }
+
+        constexpr int MAX_DATA_LEN = 512;
+        char buf[MAX_DATA_LEN];
+
+        int would_write = snprintfcb(buf, MAX_DATA_LEN, "%.8f,%d,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f,%llu\n",
+                                     static_cast<double>(data.time),
+                                     data.queue_size,
+                                     static_cast<double>(data.motor_target), static_cast<double>(data.motor_pos),
+                                     static_cast<double>(data.motor_velocity),
+                                     static_cast<double>(data.motor_acceleration),
+                                     static_cast<double>(data.pt203),
+                                     static_cast<double>(data.pt204), static_cast<double>(data.ptf401),
+                                     data.nsec_per_pulse);
+        // snprintfcb's would_write excludes null byte, but max via MAX_DATA_LEN would include null byte.
+        int actually_written = std::min(would_write, MAX_DATA_LEN - 1);
+        err = send_fully(sock, buf, actually_written);
+        if (err) {
+            LOG_WRN("Failed to send data");
         }
     }
 
-    // Print all datapoints
-    for (int i = 0; i < count_to; ++i) {
-        std::stringstream ss;
-        ss.precision(8);
-        ss << std::fixed << data_buffer[i].time << ',' << data_buffer[i].motor_pos << ',' << data_buffer[i].pt203 << ','
-           << data_buffer[i].pt204
-           << ',' << data_buffer[i].ptf401 << '\n';
-        std::string line = ss.str();
-        int bytes_sent = 0;
-        while (bytes_sent < std::ssize(line)) {
-            int ret = zsock_send(sock, line.c_str() + bytes_sent, line.size() - bytes_sent, 0);
-            if (ret < 0) {
-                LOG_ERR("Failed to dump data: err %d", ret);
-                return ret;
-            }
-            bytes_sent += ret;
-        }
-    }
-
+    k_mutex_unlock(&sequence_lock);
     return 0;
 }
 

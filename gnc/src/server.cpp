@@ -29,7 +29,7 @@ static k_thread client_threads[MAX_OPEN_CLIENTS] = {nullptr};
 K_THREAD_STACK_ARRAY_DEFINE(client_stacks, MAX_OPEN_CLIENTS, CONNECTION_THREAD_STACK_SIZE);
 
 /// Helper that sends a payload completely through an socket
-static int send_fully(int sock, const char *buf, int len) {
+int send_fully(int sock, const char *buf, int len) {
     int bytes_sent = 0;
     while (bytes_sent < len) {
         int ret = zsock_send(sock, buf + bytes_sent,
@@ -111,10 +111,17 @@ static void handle_client(void *p1_client_socket, void *, void *) {
             seq_breakpoints.push_back(throttle_valve_get_pos());
             bool wrote_gap = false;
             int curr_token = 0;
+            bool is_neg = false;
             for (int i = 3; i < std::ssize(command) - 1; ++i) {
                 if (!(command[i] >= '0' && command[i] <= '9')) {
-                    if (wrote_gap) {
+                    if (command[i] == '-') {
+                        is_neg = true;
+                    } else if (wrote_gap) {
+                        if (is_neg) {
+                            curr_token = -curr_token;
+                        }
                         seq_breakpoints.push_back(curr_token);
+                        is_neg = false;
                     } else {
                         gap = curr_token;
                         wrote_gap = true;
@@ -124,7 +131,11 @@ static void handle_client(void *p1_client_socket, void *, void *) {
                     curr_token = 10 * curr_token + (command[i] - '0');
                 }
             }
+            if (is_neg) {
+                curr_token = -curr_token;
+            }
             seq_breakpoints.push_back(curr_token);
+            is_neg = false;
 
             if (seq_breakpoints.size() <= 1) {
                 send_string_fully(client_guard.socket, "Breakpoints too short\n");

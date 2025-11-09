@@ -157,7 +157,7 @@ nc 169.254.99.99 19690
 And to ensure the output is saved to a file, run:
 
 ```shell
-nc 169.254.99.99 19690 | tee out.log
+nc 169.254.99.99 19690 | tee -a out.log
 ```
 
 ## Troubleshooting
