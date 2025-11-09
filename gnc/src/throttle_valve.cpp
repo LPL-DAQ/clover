@@ -3,6 +3,7 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/counter.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
@@ -12,6 +13,11 @@
 static const struct gpio_dt_spec pul_gpio = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_pul_gpios);
 static const struct gpio_dt_spec dir_gpio = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), stepper_dir_gpios);
 
+/// Timer for delivering pulses to driver
+static const struct device *stepper_pulse_counter_dev = DEVICE_DT_GET(DT_ALIAS(stepper_pulse_counter));
+constexpr int COUNTER_CHANNEL = 0;
+volatile uint32_t pulse_counter_ticks = 0;
+
 LOG_MODULE_REGISTER(throttle_valve, CONFIG_LOG_DEFAULT_LEVEL);
 
 constexpr float MICROSTEPS = 8.0f;
@@ -19,8 +25,8 @@ constexpr float GEARBOX_RATIO = 20.0f;
 constexpr float STEPS_PER_REVOLUTION = 200.0f;
 constexpr float DEG_PER_STEP = 360.0f / STEPS_PER_REVOLUTION / GEARBOX_RATIO / MICROSTEPS;
 
-constexpr float MAX_VELOCITY = 450.0f; // In deg/s
-constexpr float MAX_ACCELERATION = 2000.0f; // In deg/s^2
+constexpr float MAX_VELOCITY = 225.0f; // In deg/s
+constexpr float MAX_ACCELERATION = 12000.0f; // In deg/s^2
 
 
 enum MotorState {
@@ -29,14 +35,36 @@ enum MotorState {
 };
 static MotorState state = STOPPED;
 
+volatile static int steps = 0;
 static float velocity = 0;
 static float acceleration = 0;
+static volatile uint64_t last_time = 0;
+static volatile uint64_t true_interval = 0;
 K_MUTEX_DEFINE(motor_lock);
 
-volatile static int steps = 0;
 
 /// Directly controls signal to controller, each rising edge on PUL is one step.
-static void pulse(k_timer *) {
+static void pulse(const struct device *, uint8_t, uint32_t, void *) {
+    // Schedule next pulse
+    int err = counter_cancel_channel_alarm(stepper_pulse_counter_dev, COUNTER_CHANNEL);
+    if (err) {
+        LOG_ERR("Failed to cancel current stepper pulse counter channel alarm: err %d", err);
+    }
+    const counter_alarm_cfg pulse_counter_cfg = {
+            .callback = pulse,
+            .ticks = pulse_counter_ticks,
+            .user_data = nullptr,
+            .flags = 0
+    };
+    err = counter_set_channel_alarm(stepper_pulse_counter_dev, COUNTER_CHANNEL, &pulse_counter_cfg);
+    if (err) {
+        LOG_ERR("Failed to set counter top: err %d", err);
+    }
+
+    uint64_t now = k_cycle_get_64();
+    true_interval = now - last_time;
+    last_time = now;
+
     // Switch direction, if we must.
     // gpio high -> flipped by converter to low -> more open.
     // pgio low -> flipped by converter to high -> more close.
@@ -47,7 +75,6 @@ static void pulse(k_timer *) {
     }
     // high to low -> flipped by converter to low to high -> rising edge, count a step.
     if (gpio_pin_get_dt(&pul_gpio)) {
-        // As before,
         if (gpio_pin_get_dt(&dir_gpio)) {
             steps -= 1;
         } else {
@@ -56,8 +83,6 @@ static void pulse(k_timer *) {
     }
     gpio_pin_toggle_dt(&pul_gpio);
 }
-
-K_TIMER_DEFINE(pulse_timer, pulse, nullptr);
 
 /// Initializes throttle valve driver.
 int throttle_valve_init() {
@@ -70,6 +95,11 @@ int throttle_valve_init() {
 
     gpio_pin_configure_dt(&pul_gpio, GPIO_OUTPUT_INACTIVE);
     gpio_pin_configure_dt(&dir_gpio, GPIO_OUTPUT_INACTIVE);
+
+    if (!device_is_ready(stepper_pulse_counter_dev)) {
+        LOG_ERR("Stepper timer device is not ready.");
+        return 1;
+    }
 
     LOG_INF("Throttle valve initialized.");
 
@@ -98,42 +128,85 @@ int throttle_valve_start_calibrate() {
 void throttle_valve_move(float target_deg) {
     constexpr float CONTROL_TIME = 0.001;
 
-    float target_velocity = (throttle_valve_get_pos() - target_deg) / CONTROL_TIME;
+    float target_velocity = (target_deg - throttle_valve_get_pos()) / CONTROL_TIME;
 
-    // Apply acceleration limit
-    float target_acceleration = (target_velocity - velocity) / CONTROL_TIME;
-    if (acceleration > MAX_ACCELERATION) {
+    // If target velocity would require excessive acceleration, clamp it.
+    float required_acceleration = (target_velocity - velocity) / CONTROL_TIME;
+    if (required_acceleration > MAX_ACCELERATION) {
         target_velocity = velocity + CONTROL_TIME * MAX_ACCELERATION;
-    } else if (acceleration < -MAX_ACCELERATION) {
+    } else if (required_acceleration < -MAX_ACCELERATION) {
         target_velocity = velocity - CONTROL_TIME * MAX_ACCELERATION;
     }
 
-    // Apply velocity acceleration
+    // Clamp velocity
     target_velocity = std::clamp(target_velocity, -MAX_VELOCITY, MAX_VELOCITY);
 
-    // Based on velocity, calculate pulse interval
-    float nsec_per_step = 1e9f / target_velocity * DEG_PER_STEP / 2.0f;
+    // Based on velocity, calculate pulse interval. Must divide by two as each counter trigger
+    // only toggles pulse, so two triggers are needed for full step on rising edge.
+    auto usec_per_pulse = static_cast<uint64_t>(1e6 / static_cast<double>(std::abs(target_velocity)) *
+                                                static_cast<double>(DEG_PER_STEP) / 2.0);
 
-    // Set true values for acceleraiton and velocity.
+    // Set true values for acceleration and velocity.
     acceleration = (target_velocity - velocity) / CONTROL_TIME;
     velocity = target_velocity;
 
-    k_timer_start(&pulse_timer, K_NSEC(static_cast<uint64_t>(nsec_per_step)),
-                  K_NSEC(static_cast<uint64_t>(nsec_per_step)));
+    // Ensure timer is running
+    counter_start(stepper_pulse_counter_dev);
+
+    // Halt current pulse counter.
+    int err = counter_cancel_channel_alarm(stepper_pulse_counter_dev, COUNTER_CHANNEL);
+    if (err) {
+        LOG_ERR("Failed to cancel current stepper pulse counter channel alarm: err %d", err);
+    }
+
+    // Set new ticks between each alarm
+    pulse_counter_ticks = std::min(counter_us_to_ticks(stepper_pulse_counter_dev, usec_per_pulse),
+                                   counter_get_top_value(stepper_pulse_counter_dev));
+
+    // Kick off new counter
+    static counter_alarm_cfg pulse_counter_cfg = {
+            .callback = pulse,
+            .ticks = pulse_counter_ticks,
+            .user_data = nullptr,
+            .flags = 0
+    };
+    err = counter_set_channel_alarm(stepper_pulse_counter_dev, COUNTER_CHANNEL, &pulse_counter_cfg);
+    if (err) {
+        LOG_ERR("Failed to set counter top: err %d", err);
+    }
 
     state = RUNNING;
 }
 
 void throttle_valve_stop() {
     k_mutex_lock(&motor_lock, K_FOREVER);
+    counter_stop(stepper_pulse_counter_dev);
     acceleration = 0;
+    velocity = 0;
     state = STOPPED;
     k_mutex_unlock(&motor_lock);
+}
+
+/// Get the current acceleration in deg/s^2. It is only updated per call to
+/// throttle_valve_move.
+float throttle_valve_get_acceleration() {
+    return acceleration;
+}
+
+/// Get the current velocity in deg/s. It is only updated per call to
+/// throttle_valve_move.
+float throttle_valve_get_velocity() {
+    return velocity;
 }
 
 /// Get current degree position of motor in degrees.
 float throttle_valve_get_pos() {
     return static_cast<float>(steps) * DEG_PER_STEP;
+}
+
+/// Get interval between each call to pulse counter.
+uint64_t throttle_valve_get_nsec_per_pulse() {
+    return k_cyc_to_ns_near64(true_interval);
 }
 
 int throttle_valve_set_open() {
@@ -143,7 +216,6 @@ int throttle_valve_set_open() {
         LOG_ERR("Cannot reset to position open when motor is stopped.");
         return 1;
     }
-    k_timer_stop(&pulse_timer);
     steps = static_cast<int>(90.0f / DEG_PER_STEP);
     k_mutex_unlock(&motor_lock);
     return 0;
@@ -156,7 +228,6 @@ int throttle_valve_set_closed() {
         LOG_ERR("Cannot reset to position closed when motor is stopped.");
         return 1;
     }
-    k_timer_stop(&pulse_timer);
     steps = 0;
     k_mutex_unlock(&motor_lock);
     return 0;
