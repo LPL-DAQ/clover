@@ -23,10 +23,12 @@ K_MUTEX_DEFINE(sequence_lock);
 
 static int gap_millis;
 static std::vector<float> breakpoints;
+static int data_sock = -1;
 
 volatile int step_count = 0;
 volatile int count_to = 0;
 uint64_t start_clock = 0;
+
 
 /// Data that ought be logged for each control loop iteration.
 struct control_iter_data {
@@ -120,7 +122,7 @@ static void control_loop_schedule(k_timer *timer) {
 
 K_TIMER_DEFINE(control_loop_schedule_timer, control_loop_schedule, nullptr);
 
-int sequencer_start_trace(int sock) {
+int sequencer_start_trace() {
     if (breakpoints.size() < 2) {
         LOG_ERR("No breakpoints specified.");
         return 1;
@@ -131,7 +133,16 @@ int sequencer_start_trace(int sock) {
     }
     if (gap_millis < 1) {
         LOG_ERR("Breakpoint gap_millis is too short: %d ms", gap_millis);
+        return 1;
     }
+
+    k_mutex_lock(&sequence_lock, K_FOREVER);
+    if (data_sock == -1) {
+        LOG_ERR("Data socket is not set");
+        k_mutex_unlock(&sequence_lock);
+        return 1;
+    }
+
 
     // Replace first breakpoint with current position
     breakpoints.front() = throttle_valve_get_pos();
@@ -139,8 +150,6 @@ int sequencer_start_trace(int sock) {
     for (int i = 0; i < std::ssize(breakpoints); ++i) {
         LOG_INF("t=%d ms, bp=%f", i * gap_millis, static_cast<double>(breakpoints[i]));
     }
-
-    k_mutex_lock(&sequence_lock, K_FOREVER);
 
     step_count = 0;
     count_to = (std::ssize(breakpoints) - 1) * gap_millis;
@@ -151,11 +160,9 @@ int sequencer_start_trace(int sock) {
     k_timer_start(&control_loop_schedule_timer, K_NSEC(NSEC_PER_CONTROL_TICK), K_NSEC(NSEC_PER_CONTROL_TICK));
 
     // Print header
-    const std::string header = "time,queue_size,motor_target,motor_pos,motor_velocity,motor_acceleration,pt203,pt204,ptf401\n";
-    int err = send_fully(sock, header.c_str(), std::ssize(header));
-    if (err) {
-        LOG_WRN("Failed to send header");
-    }
+    send_string_fully(data_sock, ">>>>SEQ START<<<<\n");
+    send_string_fully(data_sock,
+                      "time,queue_size,motor_target,motor_pos,motor_velocity,motor_acceleration,pt203,pt204,ptf401\n");
 
     // Dump data as we get it. Connection client is preemptible while control sequence is in system workqueue
     // (cooperative) so sending data should never block processing of control iter.
@@ -182,12 +189,16 @@ int sequencer_start_trace(int sock) {
                                      static_cast<double>(data.pt204), static_cast<double>(data.ptf401));
         // snprintfcb's would_write excludes null byte, but max via MAX_DATA_LEN would include null byte.
         int actually_written = std::min(would_write, MAX_DATA_LEN - 1);
-        err = send_fully(sock, buf, actually_written);
+        err = send_fully(data_sock, buf, actually_written);
         if (err) {
             LOG_WRN("Failed to send data");
         }
     }
 
+    send_string_fully(data_sock, ">>>>SEQ END<<<<\n");
+
+    // Next data recipient should be explicitly re-set.
+    data_sock = -1;
     k_mutex_unlock(&sequence_lock);
     return 0;
 }
@@ -200,4 +211,10 @@ int sequencer_prepare(int gap, std::vector<float> bps) {
     gap_millis = gap;
     breakpoints = bps;
     return 0;
+}
+
+void sequencer_set_data_recipient(int sock) {
+    k_mutex_lock(&sequence_lock, K_FOREVER);
+    data_sock = sock;
+    k_mutex_unlock(&sequence_lock);
 }
