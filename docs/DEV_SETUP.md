@@ -9,7 +9,7 @@ This guide is intended to be comprehensible for any engineer, even if they have 
 background.
 
 ## Local setup
-    
+
 ### Install Docker Desktop
 
 Docker Desktop provides a lightweight virtual machine-esque Linux environment for any desktop platform,
@@ -36,15 +36,17 @@ at [this link](https://code.visualstudio.com/download).
 
 ### Install git
 
-git is a tool used to manage software collaboration. Install it [here](https://git-scm.com/install/). 
+git is a tool used to manage software collaboration. Install it [here](https://git-scm.com/install/).
 
 ### Build flasherd
 
-flasherd is a program that runs in the background of your computer, communicating with the inside of the dev container to send flash commands to microcontrollers.
+flasherd is a program that runs in the background of your computer, communicating with the inside of the dev container
+to send flash commands to microcontrollers.
 
 #### (Windows only) Install build dependencies
 
-Follow [these instructions](https://learn.microsoft.com/en-us/cpp/build/vscpp-step-0-installation?view=msvc-170#visual-studio-2022-installation) to install the Microsoft Visual Studio installer.
+Follow [these instructions](https://learn.microsoft.com/en-us/cpp/build/vscpp-step-0-installation?view=msvc-170#visual-studio-2022-installation)
+to install the Microsoft Visual Studio installer.
 
 Run the installer, and either install it from scratch or modify an existing installation. Under "individual
 components," ensure that you have Windows 11 SDK and Microsoft Visual C++ for x86_64 installed.
@@ -115,7 +117,7 @@ hello
 Run the following to build the `throttle` application:
 
 ```shell
-west build -p auto throttle -b throttle_legacy
+west build -p auto gnc -b throttle_legacy
 ```
 
 Press the large white reset button on the Teensy. Then, run the following to flash:
