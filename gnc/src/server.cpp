@@ -142,10 +142,6 @@ static void handle_client(void *p1_client_socket, void *, void *) {
                 continue;
             }
             int time_ms = (std::ssize(seq_breakpoints) - 1) * gap;
-            if (time_ms > 4000) {
-                send_string_fully(client_guard.socket, "Sequence must be under 4000ms due to data storage cap\n");
-                continue;
-            }
             if (sequencer_prepare(gap, seq_breakpoints)) {
                 send_string_fully(client_guard.socket, "Failed to prepare sequence");
                 continue;

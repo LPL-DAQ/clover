@@ -36,7 +36,7 @@ struct control_iter_data {
     float motor_pos;
     float motor_velocity;
     float motor_acceleration;
-    uint64_t nsec_per_pulse;
+    uint64_t motor_nsec_per_pulse;
     float pt203;
     float pt204;
     float ptf401;
@@ -91,7 +91,7 @@ static void step_control_loop(k_work *) {
             .motor_pos = throttle_valve_get_pos(),
             .motor_velocity = throttle_valve_get_velocity(),
             .motor_acceleration = throttle_valve_get_acceleration(),
-            .nsec_per_pulse = throttle_valve_get_nsec_per_pulse(),
+            .motor_nsec_per_pulse = throttle_valve_get_nsec_per_pulse(),
             .pt203 = readings.pt203,
             .pt204 = readings.pt204,
             .ptf401 = readings.ptf401
@@ -121,7 +121,7 @@ static void control_loop_schedule(k_timer *timer) {
 K_TIMER_DEFINE(control_loop_schedule_timer, control_loop_schedule, nullptr);
 
 int sequencer_start_trace(int sock) {
-    if (breakpoints.empty()) {
+    if (breakpoints.size() < 2) {
         LOG_ERR("No breakpoints specified.");
         return 1;
     }
@@ -143,7 +143,7 @@ int sequencer_start_trace(int sock) {
     k_mutex_lock(&sequence_lock, K_FOREVER);
 
     step_count = 0;
-    count_to = std::min((std::ssize(breakpoints) - 1) * gap_millis, 4000);
+    count_to = (std::ssize(breakpoints) - 1) * gap_millis;
 
     start_clock = k_cycle_get_64();
 
@@ -171,15 +171,15 @@ int sequencer_start_trace(int sock) {
         constexpr int MAX_DATA_LEN = 512;
         char buf[MAX_DATA_LEN];
 
-        int would_write = snprintfcb(buf, MAX_DATA_LEN, "%.8f,%d,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f,%llu\n",
+        int would_write = snprintfcb(buf, MAX_DATA_LEN, "%.8f,%d,%.8f,%.8f,%.8f,%.8f,%llu,%.8f,%.8f,%.8f\n",
                                      static_cast<double>(data.time),
                                      data.queue_size,
                                      static_cast<double>(data.motor_target), static_cast<double>(data.motor_pos),
                                      static_cast<double>(data.motor_velocity),
                                      static_cast<double>(data.motor_acceleration),
+                                     data.motor_nsec_per_pulse,
                                      static_cast<double>(data.pt203),
-                                     static_cast<double>(data.pt204), static_cast<double>(data.ptf401),
-                                     data.nsec_per_pulse);
+                                     static_cast<double>(data.pt204), static_cast<double>(data.ptf401));
         // snprintfcb's would_write excludes null byte, but max via MAX_DATA_LEN would include null byte.
         int actually_written = std::min(would_write, MAX_DATA_LEN - 1);
         err = send_fully(sock, buf, actually_written);
