@@ -3,6 +3,8 @@
 
 #include <vector>
 
-int sequencer_start_trace(int sock, int gap, std::vector<float> bps);
+int sequencer_prepare(int gap, std::vector<float> bps);
+
+int sequencer_start_trace(int sock);
 
 #endif //CLOVER_SEQUENCER_H

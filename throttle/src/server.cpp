@@ -52,6 +52,7 @@ static void handle_client(void *p1_client_socket, void *, void *) {
     SocketGuard client_guard{reinterpret_cast<int>(p1_client_socket)};
     LOG_INF("Handling socket: %d", client_guard.socket);
     k_sleep(K_MSEC(500));
+
     while (true) {
         // Read one byte at a time till we get a #-terminated command
         constexpr int MAX_COMMAND_LEN = 512;
@@ -94,15 +95,6 @@ static void handle_client(void *p1_client_socket, void *, void *) {
             // Sets the current position as 0 deg WITHOUT moving the valve.
             throttle_valve_set_closed();
             send_string_fully(client_guard.socket, "Done reset close\n");
-        } else if (command.starts_with("move")) {
-            // Example input: "move090,1000#" or "move-90,1000#"
-
-            double degrees = std::stod(command.substr(4, 3));
-            double timems = std::stod(command.substr(8, command.length() - 8));
-            LOG_INF("Commanding change of %f deg in %f ms", degrees, timems);
-            throttle_valve_move(degrees, timems / 1000.0);
-            send_string_fully(client_guard.socket, "Done move\n");
-
         } else if (command.starts_with("seq")) {
             // Example: seq500;75.5,52.0,70,90, where 500 -> 500ms between each breakpoint and
             // the commas-seperated values are the breakpoints in degrees.
@@ -111,15 +103,18 @@ static void handle_client(void *p1_client_socket, void *, void *) {
             // at, say, 90 deg.
             // Also, please do not give invalid input :) :) :)
 
+            std::vector<float> seq_breakpoints;
+
             // Mini token parser
             int gap = 0;
-            std::vector<float> breakpoints{throttle_valve_get_pos()};
+            seq_breakpoints.clear();
+            seq_breakpoints.push_back(throttle_valve_get_pos());
             bool wrote_gap = false;
             int curr_token = 0;
             for (int i = 3; i < std::ssize(command) - 1; ++i) {
                 if (!(command[i] >= '0' && command[i] <= '9')) {
                     if (wrote_gap) {
-                        breakpoints.push_back(curr_token);
+                        seq_breakpoints.push_back(curr_token);
                     } else {
                         gap = curr_token;
                         wrote_gap = true;
@@ -129,27 +124,23 @@ static void handle_client(void *p1_client_socket, void *, void *) {
                     curr_token = 10 * curr_token + (command[i] - '0');
                 }
             }
-            breakpoints.push_back(curr_token);
+            seq_breakpoints.push_back(curr_token);
 
-            if (breakpoints.size() <= 1) {
+            if (seq_breakpoints.size() <= 1) {
                 send_string_fully(client_guard.socket, "Breakpoints too short\n");
                 continue;
             }
-            if ((std::ssize(breakpoints) - 1) * gap > 4000) {
+            int time_ms = (std::ssize(seq_breakpoints) - 1) * gap;
+            if (time_ms > 4000) {
                 send_string_fully(client_guard.socket, "Sequence must be under 4000ms due to data storage cap\n");
                 continue;
             }
-            send_string_fully(client_guard.socket, ">>>>SEQ START<<<<\n");
-            int err = sequencer_start_trace(client_guard.socket, gap, breakpoints);
-            send_string_fully(client_guard.socket, ">>>>SEQ END<<<<\n");
-            if (err) {
-                LOG_ERR("Failed to run sequence: err %d", err);
-                send_string_fully(client_guard.socket, "Failed to run sequence\n");
+            if (sequencer_prepare(gap, seq_breakpoints)) {
+                send_string_fully(client_guard.socket, "Failed to prepare sequence");
                 continue;
             }
-
-            send_string_fully(client_guard.socket, "Done sequence.\n");
-
+            std::string msg = "Breakpoints prepared, length is: " + std::to_string(time_ms) + "ms\n";
+            send_string_fully(client_guard.socket, msg.c_str());
 
         } else if (command == "getpos#") {
             double pos = throttle_valve_get_pos();
@@ -169,6 +160,18 @@ static void handle_client(void *p1_client_socket, void *, void *) {
             if (err) {
                 LOG_ERR("Failed to fully send pt readings: err %d", err);
             }
+        } else if (command == "START#" || command == "start#") {
+            // Triggered in DAQ sequencer.
+            send_string_fully(client_guard.socket, ">>>>SEQ START<<<<\n");
+            int err = sequencer_start_trace(client_guard.socket);
+            send_string_fully(client_guard.socket, ">>>>SEQ END<<<<\n");
+            if (err) {
+                LOG_ERR("Failed to run sequence: err %d", err);
+                send_string_fully(client_guard.socket, "Failed to run sequence\n");
+                continue;
+            }
+
+            send_string_fully(client_guard.socket, "Done sequence.\n");
         } else {
             LOG_WRN("Unknown command.");
         }

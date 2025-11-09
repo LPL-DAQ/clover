@@ -8,7 +8,7 @@ int throttle_valve_start_calibrate();
 
 float throttle_valve_get_pos();
 
-int throttle_valve_move(float degrees, float time);
+void throttle_valve_move(float degrees);
 
 void throttle_valve_stop();
 
