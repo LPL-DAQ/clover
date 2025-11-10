@@ -162,7 +162,7 @@ int sequencer_start_trace() {
     // Print header
     send_string_fully(data_sock, ">>>>SEQ START<<<<\n");
     send_string_fully(data_sock,
-                      "time,queue_size,motor_target,motor_pos,motor_velocity,motor_acceleration,pt203,pt204,ptf401\n");
+                      "time,queue_size,motor_target,motor_pos,motor_velocity,motor_acceleration,motor_nsec_per_pulse,pt203,pt204,ptf401\n");
 
     // Dump data as we get it. Connection client is preemptible while control sequence is in system workqueue
     // (cooperative) so sending data should never block processing of control iter.

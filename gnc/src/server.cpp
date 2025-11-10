@@ -168,6 +168,7 @@ static void handle_client(void *p1_client_socket, void *, void *) {
                 LOG_ERR("Failed to fully send pt readings: err %d", err);
             }
         } else if (command == "START#") {
+            send_string_fully(client_guard.socket, "ACK#");
             // Triggered in DAQ sequencer.
             LOG_INF("Triggering sequence from DAQ.");
             int err = sequencer_start_trace();
