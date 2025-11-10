@@ -5,22 +5,9 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/drivers/pwm.h>
 
 #define STEPPER0_NODE DT_NODELABEL(stepper0)
 #define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
-
-
-static const pwm_dt_spec ESC_1 =
-    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 0);
-static const pwm_dt_spec ESC_2 =
-    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 1);
-
-
-static const pwm_dt_spec SERVO_X =
-    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 2);
-static const pwm_dt_spec SERVO_Y =
-    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 3);
 
 
 
@@ -37,8 +24,7 @@ volatile int steps = 0;
 
 int throttle_valve_init() {
     LOG_INF("Initializing throttle valve...");
-    (void)SERVO_X;    (void)SERVO_Y;
-    (void)ESC_1; (void)ESC_2;
+
 
     if (!device_is_ready(pul_gpios.port) || !device_is_ready(dir_gpios.port)) {
         LOG_ERR("GPIO device(s) not ready");

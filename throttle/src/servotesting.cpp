@@ -1,36 +1,107 @@
-#include "throttle_valve.h"
+#include "servotesting.h"
+
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
-#include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
+#include <zephyr/drivers/pwm.h>
+
+#define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
 
 
+static const pwm_dt_spec ESC_1 =
+    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 0);
+static const pwm_dt_spec ESC_2 =
+    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 1);
 
 
-static inline void set_us(const pwm_dt_spec& s, uint32_t us) {
-    // Period is already in the DT (20 ms), so set just the pulse:
-    pwm_set_pulse_dt(&s, PWM_USEC(us));
+static const pwm_dt_spec SERVO_X =
+    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 2);
+static const pwm_dt_spec SERVO_Y =
+    PWM_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 3);
+
+
+static inline bool pwm_ready(const pwm_dt_spec& s) {
+    return device_is_ready(s.dev);
 }
 
-extern "C" void main(void) {
-    if (!device_is_ready(tvc_x.dev) || !device_is_ready(tvc_y.dev)) {
-        printk("PWM device(s) not ready\n");
-        return;
+/* Initialize: verify all PWM endpoints are present & ready */
+int servos_init() {
+    if (!pwm_ready(ESC_1) || !pwm_ready(ESC_2) ||
+        !pwm_ready(SERVO_X) || !pwm_ready(SERVO_Y)) {
+        return -ENODEV;
     }
-    // Center both, then sweep opposite for a quick check
-    set_us(tvc_x, 1500); set_us(tvc_y, 1500);
-    k_msleep(500);
-    while (1) {
-        for (uint32_t u = 700; u <= 2300; u += 50) {
-            set_us(tvc_x, u);
-            set_us(tvc_y, 2400 - u);
-            k_msleep(15);
-        }
-        for (uint32_t u = 2300; u >= 700; u -= 50) {
-            set_us(tvc_x, u);
-            set_us(tvc_y, 2400 - u);
-            k_msleep(15);
-        }
-    }
+    /* Optional: park outputs at neutral pulses if your PCA9685 default is 0 */
+    pwm_set_pulse_dt(&SERVO_X, PWM_USEC(1500));
+    pwm_set_pulse_dt(&SERVO_Y, PWM_USEC(1500));
+    pwm_set_pulse_dt(&ESC_1,  PWM_USEC(1000)); // min/“disarmed”
+    pwm_set_pulse_dt(&ESC_2,  PWM_USEC(1000));
+    return 0;
 }
+
+/* Generic servo: degrees → microseconds → pwm_set_pulse_dt
+   deg in [0,180] maps to [min_us,max_us] (defaults 1000–2000 µs) */
+int servo_write_deg(const pwm_dt_spec& servo,
+                    float deg,
+                    uint16_t min_us = 1000,
+                    uint16_t max_us = 2000)
+{
+    if (!pwm_ready(servo)) return -ENODEV;
+    if (deg < 0.f)   deg = 0.f;
+    if (deg > 180.f) deg = 180.f;
+    const float span = float(max_us - min_us);
+    const uint32_t us = uint32_t(min_us + (deg / 180.f) * span);
+    return pwm_set_pulse_dt(&servo, PWM_USEC(us));
+}
+
+/* ESC helper: write a raw microsecond pulse (e.g., 1000–2000 µs) */
+int esc_write_us(const pwm_dt_spec& esc, uint16_t us) {
+    if (!pwm_ready(esc)) return -ENODEV;
+    /* Clamp to something sane for hobby ESCs */
+    if (us < 800)  us = 800;
+    if (us > 2200) us = 2200;
+    return pwm_set_pulse_dt(&esc, PWM_USEC(us));
+}
+
+/* Simple demo: sweep servos and blip ESCs */
+int servotesting_demo() {
+    int err = servos_init();
+    if (err) return err;
+
+    /* Example: arm ESCs (typical: 1000 µs for a couple seconds) */
+    esc_write_us(ESC_1, 1000);
+    esc_write_us(ESC_2, 1000);
+    k_msleep(2000);
+
+    /* Optional: go to middle throttle */
+    esc_write_us(ESC_1, 1500);
+    esc_write_us(ESC_2, 1500);
+
+    /* Sweep servos 0→180→0 */
+    for (int d = 0; d <= 180; d += 5) {
+        servo_write_deg(SERVO_X, d);
+        servo_write_deg(SERVO_Y, 180 - d);
+        k_msleep(20);
+    }
+    for (int d = 180; d >= 0; d -= 5) {
+        servo_write_deg(SERVO_X, d);
+        servo_write_deg(SERVO_Y, 180 - d);
+        k_msleep(20);
+    }
+
+    /* Idle ESCs again */
+    esc_idle();
+    servo_neutral();
+    return 0;
+}
+
+void servo_neutral() {
+    servo_write_deg(SERVO_X, 90);
+    servo_write_deg(SERVO_Y, 90);
+}
+
+void esc_idle() {
+    esc_write_us(ESC_1, 1000);
+    esc_write_us(ESC_1, 1000);
+
+}
+

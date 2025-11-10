@@ -9,6 +9,7 @@
 
 #include "server.h"
 #include "throttle_valve.h"
+#include "servotesting.h"
 #include "pts.h"
 
 extern "C" {
@@ -46,6 +47,12 @@ int main(void) {
         LOG_ERR("Failed to initialize throttle valve");
         return 0;
     }
+    LOG_INF("Initializing servos");
+    err = servos_init();
+    if (err) {
+        LOG_ERR("Failed to initialize servos");
+        return 0;
+    }
 
     LOG_INF("Initializing PTs");
     err = pts_init();
@@ -56,6 +63,8 @@ int main(void) {
 
     LOG_INF("Starting server");
     serve_connections();
+
+    servotesting_demo();
 
     while (1);
 }
