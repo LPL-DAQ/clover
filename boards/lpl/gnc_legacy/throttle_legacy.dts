@@ -51,9 +51,11 @@ To the find devicetree ADC channel for a teensy ADC pin:
 		stepper-dir-gpios = <&gpio3 18 GPIO_ACTIVE_HIGH>; // Pin 28
 		stepper-ena-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>; // Pin 4
 
-		/* SERVOS: two PWM specs living next to your stepper props */
-		pwms = <&pca9685 15 PWM_MSEC(20)>,
-			   <&pca9685 14 PWM_MSEC(20)>;
+		/* PCA pins, Servo and ESC*/
+		pwms = <&pca9685 11 PWM_MSEC(20)>, // ESC 1
+			   <&pca9685 12 PWM_MSEC(20)>, // ESC 2
+			   <&pca9685 14 PWM_MSEC(20)>, // Servo X
+			   <&pca9685 15 PWM_MSEC(20)>; // Servo Y
 		servo-min-pulse-us = <1000>;
 		servo-max-pulse-us = <2000>;
 
