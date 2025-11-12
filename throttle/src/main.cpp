@@ -9,7 +9,7 @@
 
 #include "server.h"
 #include "throttle_valve.h"
-#include "servotesting.h"
+//#include "servotesting.h"
 #include "pts.h"
 
 extern "C" {
@@ -18,43 +18,42 @@ extern "C" {
 
 LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
 
-BUILD_ASSERT(DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart),
-             "Console device is not ACM CDC UART device");
 
 int main(void) {
+    printk("Starting Code %s\n", CONFIG_BOARD);
+
     // Status LED
     const struct device *blink = DEVICE_DT_GET(DT_NODELABEL(blink_led));
     if (!device_is_ready(blink)) {
         return 0;
     }
-    blink_set_period_ms(blink, 1000u);
+    blink_set_period_ms(blink, 100u);
 
-    // Serial over USB setup
-    if (usb_enable(nullptr)) {
-        LOG_ERR("USB is not enabled.");
-        while (1);
-    }
-    const struct device *usb_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
-    uint32_t dtr = 0;
-    while (!dtr) {
-        uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
-        k_sleep(K_MSEC(100));
-    }
+
+   // const struct device *usb_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+   // uint32_t dtr = 0;
+   // while (!dtr) {
+   //     uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
+   //     k_sleep(K_MSEC(100));
+   // }
 
     LOG_INF("Initializing throttle valve");
+    printk("Initializing throttle valve\n");
     int err = throttle_valve_init();
     if (err) {
         LOG_ERR("Failed to initialize throttle valve");
         return 0;
     }
     LOG_INF("Initializing servos");
-    err = servos_init();
+    printk("Initializing servos\n");
+    //err = servos_init();
     if (err) {
         LOG_ERR("Failed to initialize servos");
         return 0;
     }
 
     LOG_INF("Initializing PTs");
+    printk("Initializing PTs\n");
     err = pts_init();
     if (err) {
         LOG_ERR("Failed to initialize PTs");
@@ -62,9 +61,10 @@ int main(void) {
     }
 
     LOG_INF("Starting server");
+    printk("Starting server\n");
     serve_connections();
 
-    servotesting_demo();
+    //servotesting_demo();
 
     while (1);
 }
