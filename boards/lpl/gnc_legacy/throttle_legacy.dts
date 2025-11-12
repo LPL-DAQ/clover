@@ -52,8 +52,8 @@ To the find devicetree ADC channel for a teensy ADC pin:
 		stepper-ena-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>; // Pin 4
 
 		/* PCA pins, Servo and ESC*/
-		pwms = <&pca9685 11 PWM_MSEC(20)>, // ESC 1
-			   <&pca9685 12 PWM_MSEC(20)>, // ESC 2
+		pwms = <&pca9685 12 PWM_MSEC(20)>, // ESC 1
+			   <&pca9685 13 PWM_MSEC(20)>, // ESC 2
 			   <&pca9685 14 PWM_MSEC(20)>, // Servo X
 			   <&pca9685 15 PWM_MSEC(20)>; // Servo Y
 		servo-min-pulse-us = <1000>;
@@ -67,7 +67,8 @@ To the find devicetree ADC channel for a teensy ADC pin:
 	};
 
 	chosen {
-		zephyr,console = &cdc_acm_uart0;
+		zephyr,console = &lpuart6;
+		zephyr,serial = &lpuart6;
 	};
 
 	example_sensor: example-sensor {
@@ -187,10 +188,11 @@ pt_adc: &adc1 {
 };
 
 &lpuart6 {
-	status = "disabled";
-};
-
-&lpuart4 {
 	status = "okay";
 	current-speed = <115200>;
+
+};
+
+&cdc_acm_uart0 {
+	status = "disabled";
 };

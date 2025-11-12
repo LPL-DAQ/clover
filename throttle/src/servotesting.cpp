@@ -64,6 +64,7 @@ int esc_write_us(const pwm_dt_spec& esc, uint16_t us) {
 
 /* Simple demo: sweep servos and blip ESCs */
 int servotesting_demo() {
+    printk("Servotesting demo\n");
     int err = servos_init();
     if (err) return err;
 
@@ -101,7 +102,7 @@ void servo_neutral() {
 
 void esc_idle() {
     esc_write_us(ESC_1, 1000);
-    esc_write_us(ESC_1, 1000);
+    esc_write_us(ESC_2, 1000);
 
 }
 
