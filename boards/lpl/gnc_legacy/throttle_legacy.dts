@@ -115,6 +115,7 @@ To the find devicetree ADC channel for a teensy ADC pin:
 
 	i2c1_default: i2c1_default {
 		/* Teensy 4.1 default I2C: AD_B1_00=SCL, AD_B1_01=SDA */
+
 		pinmux = <&iomuxc_gpio_ad_b1_00_lpi2c1_scl
 				  &iomuxc_gpio_ad_b1_01_lpi2c1_sda>;
 
