@@ -38,8 +38,8 @@ static adc_sequence sequence;
 uint16_t raw_readings[CONFIG_PT_SAMPLES][NUM_PTS];
 
 struct pt_config {
-    double scale; // psig per analog reading unit. For teensy, resolution = 12, so for a 1k PT this would be (1000.0 / 4096.0)
-    double bias;
+    float scale; // psig per analog reading unit. For teensy, resolution = 12, so for a 1k PT this would be (1000.0 / 4096.0)
+    float bias;
 };
 
 pt_config configs[NUM_PTS] = {
@@ -108,10 +108,10 @@ pt_readings pts_sample() {
     }
 
     // Averaging readings
-    double readings_by_idx[NUM_PTS] = {0};
+    float readings_by_idx[NUM_PTS] = {0};
     for (int i = 0; i < NUM_PTS; ++i) {
         for (int j = 0; j < CONFIG_PT_SAMPLES; ++j) {
-            readings_by_idx[i] += static_cast<double>(raw_readings[j][i]);
+            readings_by_idx[i] += static_cast<float>(raw_readings[j][i]);
         }
         readings_by_idx[i] = readings_by_idx[i] / CONFIG_PT_SAMPLES * configs[i].scale + configs[i].bias;
     }
@@ -125,6 +125,6 @@ pt_readings pts_sample() {
 
 /// Log PT readings for debug purposes
 void pts_log_readings(const pt_readings &readings) {
-#define CLOVER_PTS_DT_TO_LOG(node_id, prop, idx) LOG_INF(DT_PROP_BY_IDX(node_id, prop, idx) ": %f psig", readings.DT_STRING_TOKEN_BY_IDX(node_id, prop, idx));
+#define CLOVER_PTS_DT_TO_LOG(node_id, prop, idx) LOG_INF(DT_PROP_BY_IDX(node_id, prop, idx) ": %f psig", static_cast<double>(readings.DT_STRING_TOKEN_BY_IDX(node_id, prop, idx)));
     DT_FOREACH_PROP_ELEM(USER_NODE, pt_names, CLOVER_PTS_DT_TO_LOG)
 }
