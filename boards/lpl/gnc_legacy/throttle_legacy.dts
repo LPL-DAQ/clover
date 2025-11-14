@@ -90,6 +90,7 @@ To the find devicetree ADC channel for a teensy ADC pin:
 	status = "okay";
 };
 
+// subgroup
 &flexpwm4_pwm2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm4_2_a_emc_04 &pwm4_2_b_emc_05>;
