@@ -53,11 +53,10 @@ To the find devicetree ADC channel for a teensy ADC pin:
 		stepper-ena-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>; // Pin 4
 
 		// SERVOS
-		pwms =  <&flexpwm4_pwm2 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>,  /* tvc_x, pin 2, channel A */
-				<&flexpwm4_pwm2 1 PWM_MSEC(20) PWM_POLARITY_NORMAL>,  /* tvc_y, pin 3, channel B */
-				<&flexpwm2_pwm0 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>,  /* esc_1, pin 4, channel A */
-				<&flexpwm2_pwm1 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;  /* esc_2, pin 5, channel A */
-		pwm-names = "tvc_x", "tvc_y", "esc_1", "esc_2";
+		pwms = <&flexpwm4_pwm2 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>,  /* tvc_x, pin 2, channel A */
+			   <&flexpwm4_pwm2 1 PWM_MSEC(20) PWM_POLARITY_NORMAL>,  /* tvc_y, pin 3, channel B */
+			   <&flexpwm2_pwm1 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;  /* esc_2, pin 5, channel A */
+		pwm-names = "tvc_x", "tvc_y", "esc_2";
 
 		servo-min-pulse-us = <1000>;
 		servo-max-pulse-us = <2000>;
@@ -97,15 +96,9 @@ To the find devicetree ADC channel for a teensy ADC pin:
 	pinctrl-0 = <&pwm4_2_a_emc_04 &pwm4_2_b_emc_05>;
 	status = "okay";
 };
-/* Enable eFlexPWM2 submodule 1 and bind pin 4/5 */
-&flexpwm2 {
-	status = "okay";
-};
 
-// subgroup
-&flexpwm2_pwm0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pwm2_0_a_emc_06>;
+/* Enable eFlexPWM2 submodule 1 and bind pin 5 */
+&flexpwm2 {
 	status = "okay";
 };
 
@@ -115,7 +108,6 @@ To the find devicetree ADC channel for a teensy ADC pin:
 	pinctrl-0 = <&pwm2_1_a_emc_08>;
 	status = "okay";
 };
-
 
 // Docs: https://docs.zephyrproject.org/latest/build/dts/api/bindings/pinctrl/nxp%2Cmcux-rt-pinctrl.html
 &pinctrl {
@@ -132,33 +124,37 @@ To the find devicetree ADC channel for a teensy ADC pin:
 
 	/* Teensy 4.1: Pin 2 (GPIO_EMC_04) = FLEXPWM4 PWMA2 */
 	pwm4_2_a_emc_04: pwm4_2_a_emc_04 {
-		pinmux = <&iomuxc_gpio_emc_04_flexpwm4_pwma2>;
-		drive-strength = "r0-6";
-		slew-rate = "fast";
-		bias-disable;
+		group0 {
+
+			pinmux = <&iomuxc_gpio_emc_04_flexpwm4_pwma2>;
+			drive-strength = "r0-6";
+			slew-rate = "fast";
+			bias-disable;
+			nxp,speed = "100-mhz";     /* valid enums: "low","100-mhz","150-mhz","200-mhz" */
+		};
 	};
 
 	/* Teensy pin 3 = GPIO_EMC_05 -> FlexPWM4 PWMB2 */
 	pwm4_2_b_emc_05: pwm4_2_b_emc_05 {
-		pinmux = <&iomuxc_gpio_emc_05_flexpwm4_pwmb2>;
-		drive-strength = "r0-6";
-		slew-rate = "fast";
-		bias-disable;
-	};
-	/* pin 4 = GPIO_EMC_06 = FlexPWM2 PWMA00 (module 2, submodule 0, channel A) */
-	pwm2_0_a_emc_06: pwm2_0_a_emc_06 {
-		pinmux = <&iomuxc_gpio_emc_06_flexpwm2_pwma0>;
-		drive-strength = "r0-6";
-		slew-rate = "fast";
-		nxp,speed = "100-mhz";
+		group0 {
+
+			pinmux = <&iomuxc_gpio_emc_05_flexpwm4_pwmb2>;
+			drive-strength = "r0-6";
+			slew-rate = "fast";
+			bias-disable;
+			nxp,speed = "100-mhz";     /* valid enums: "low","100-mhz","150-mhz","200-mhz" */
+		};
 	};
 
 	/* pin 5 = GPIO_EMC_08 = FlexPWM2 PWMA01 (module 2, submodule 1, channel A) */
 	pwm2_1_a_emc_08: pwm2_1_a_emc_08 {
-		pinmux = <&iomuxc_gpio_emc_08_flexpwm2_pwma1>;
-		drive-strength = "r0-6";
-		slew-rate = "fast";
-		nxp,speed = "100-mhz";
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_08_flexpwm2_pwma1>;
+			drive-strength = "r0-6";
+			slew-rate = "fast";
+			nxp,speed = "100-mhz";
+			nxp,speed = "100-mhz";     /* valid enums: "low","100-mhz","150-mhz","200-mhz" */
+		};
 	};
 
 

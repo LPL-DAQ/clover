@@ -18,9 +18,6 @@ static const pwm_dt_spec SERVO_X =
 static const pwm_dt_spec SERVO_Y =
     PWM_DT_SPEC_GET_BY_NAME(DT_PATH(zephyr_user), tvc_y);
 
-static const pwm_dt_spec ESC_1 =
-    PWM_DT_SPEC_GET_BY_NAME(DT_PATH(zephyr_user), esc_1);
-
 static const pwm_dt_spec ESC_2 =
     PWM_DT_SPEC_GET_BY_NAME(DT_PATH(zephyr_user), esc_2);
 
@@ -32,14 +29,13 @@ static inline bool pwm_ready(const pwm_dt_spec& s) {
 
 /* Initialize: verify all PWM endpoints are present & ready */
 int servos_init() {
-    if (!pwm_ready(ESC_1) || !pwm_ready(ESC_2) ||
+    if (!pwm_ready(ESC_2) ||
         !pwm_ready(SERVO_X) || !pwm_ready(SERVO_Y)) {
         return -ENODEV;
     }
     /* Optional: park outputs at neutral pulses if your PCA9685 default is 0 */
     pwm_set_pulse_dt(&SERVO_X, PWM_USEC(1500));
     pwm_set_pulse_dt(&SERVO_Y, PWM_USEC(1500));
-    pwm_set_pulse_dt(&ESC_1,  PWM_USEC(1000)); // min/“disarmed”
     pwm_set_pulse_dt(&ESC_2,  PWM_USEC(1000));
     return 0;
 }
@@ -77,7 +73,6 @@ int servotesting_demo() {
     printk("arm esc\n");
 
     /* Example: arm ESCs (typical: 1000 µs for a couple seconds) */
-    esc_write_us(ESC_1, 1000);
     esc_write_us(ESC_2, 1000);
     k_msleep(1000);
     printk("middle throttle\n");
@@ -97,7 +92,6 @@ int servotesting_demo() {
             LOG_ERR("Failed to write servo Y");
             return 0;
         }
-        esc_write_us(ESC_1, 1500);
         esc_write_us(ESC_2, 1500);
         k_msleep(20);
     }
@@ -116,7 +110,6 @@ void servo_neutral() {
 }
 
 void esc_idle() {
-    esc_write_us(ESC_1, 1000);
     esc_write_us(ESC_2, 1000);
 
 }
