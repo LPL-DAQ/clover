@@ -213,7 +213,7 @@ static void handle_client(void *p1_client_socket, void *, void *) {
             float value = 0;
             bool bias_is_negative = false;
             bool in_label_segment = true;
-            for (int i = 12; i < std::ssize(command); ++i) {
+            for (int i = 12; i < std::ssize(command) - 1; ++i) {
                 if (command[i] != ',') {
                     if (in_label_segment) {
                         pt_name += command[i];
@@ -256,7 +256,7 @@ static void handle_client(void *p1_client_socket, void *, void *) {
             }
 
             send_string_fully(client_guard.socket, "Set PT bias.");
-        } else if (command == "getptconfigs") {
+        } else if (command == "getptconfigs#") {
             std::string payload;
             std::array<std::string, 4> index_to_pt{
                     "UNUSED",
