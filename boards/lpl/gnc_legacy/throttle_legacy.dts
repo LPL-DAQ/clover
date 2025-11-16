@@ -137,7 +137,6 @@ To the find devicetree ADC channel for a teensy ADC pin:
 	/* Teensy pin 3 = GPIO_EMC_05 -> FlexPWM4 PWMB2 */
 	pwm4_2_b_emc_05: pwm4_2_b_emc_05 {
 		group0 {
-
 			pinmux = <&iomuxc_gpio_emc_05_flexpwm4_pwmb2>;
 			drive-strength = "r0-6";
 			slew-rate = "fast";

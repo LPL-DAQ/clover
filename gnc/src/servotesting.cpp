@@ -75,25 +75,50 @@ int servotesting_demo() {
     /* Example: arm ESCs (typical: 1000 µs for a couple seconds) */
     esc_write_us(ESC_2, 1000);
     k_msleep(1000);
-    printk("middle throttle\n");
-    printk("servo 0 -> 180 \n");
 
+    printk("middle throttle\n");
+    esc_write_us(ESC_2, 1500);
+    k_msleep(1500);
+
+    printk("servo 0 -> 180 \n");
     /* servos 90 */
-    for (int d = 0; d <= 100000; d += 1) {
+    while (true){
+
+    for (int d = 0; d <= 180; d += 2) {
+
         int err = 0;
-        err = servo_write_deg(SERVO_X, 90);
+        err = servo_write_deg(SERVO_X, d);
         if (err) {
             LOG_ERR("Failed to write servo X");
             return 0;
         }
 
-        err = servo_write_deg(SERVO_Y, 90);
+        err = servo_write_deg(SERVO_Y, d);
         if (err) {
             LOG_ERR("Failed to write servo Y");
             return 0;
         }
-        esc_write_us(ESC_2, 1500);
         k_msleep(20);
+    }
+    printk("servo 180 -> 0 \n");
+
+    /* servos 90 */
+    for (int d = 0; d <= 180; d += 2) {
+
+        int err = 0;
+        err = servo_write_deg(SERVO_X, 180-d);
+        err = servo_write_deg(SERVO_Y, 180-d);
+        if (err) {
+            LOG_ERR("Failed to write servo X");
+            return 0;
+        }
+
+        if (err) {
+            LOG_ERR("Failed to write servo Y");
+            return 0;
+        }
+        k_msleep(20);
+    }
     }
 
     printk("demo over: idle all\n");
