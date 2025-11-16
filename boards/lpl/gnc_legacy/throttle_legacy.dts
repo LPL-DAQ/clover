@@ -153,7 +153,6 @@ To the find devicetree ADC channel for a teensy ADC pin:
 			drive-strength = "r0-6";
 			slew-rate = "fast";
 			nxp,speed = "100-mhz";
-			nxp,speed = "100-mhz";     /* valid enums: "low","100-mhz","150-mhz","200-mhz" */
 		};
 	};
 
