@@ -1,5 +1,6 @@
 #include "servotesting.h"
 
+#include <zephyr/logging/log.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/kernel.h>
@@ -7,6 +8,7 @@
 
 #define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
 
+LOG_MODULE_REGISTER(servotesting, CONFIG_LOG_DEFAULT_LEVEL);
 
 
 // start with 1000-2000 us PWM signal, test to go up to 500-2500
@@ -83,8 +85,18 @@ int servotesting_demo() {
 
     /* servos 90 */
     for (int d = 0; d <= 100000; d += 1) {
-        servo_write_deg(SERVO_X, 90);
-        servo_write_deg(SERVO_Y, 90);
+        int err = 0;
+        err = servo_write_deg(SERVO_X, 90);
+        if (err) {
+            LOG_ERR("Failed to write servo X");
+            return 0;
+        }
+
+        err = servo_write_deg(SERVO_Y, 90);
+        if (err) {
+            LOG_ERR("Failed to write servo Y");
+            return 0;
+        }
         esc_write_us(ESC_1, 1500);
         esc_write_us(ESC_2, 1500);
         k_msleep(20);
