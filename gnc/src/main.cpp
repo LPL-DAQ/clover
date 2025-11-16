@@ -55,9 +55,16 @@ int main(void) {
         return 0;
     }
 
-    LOG_INF("Starting server");
+    LOG_INF("Initializing SERVOS");
 
+    err = servos_init();
+    if (err) {
+        LOG_ERR("Failed to initialize servos");
+        return 0;
+    }
     servotesting_demo();
+
+    LOG_INF("Starting server");
     serve_connections();
     while (1);
 }
