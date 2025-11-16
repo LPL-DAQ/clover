@@ -10,6 +10,7 @@
 #include "server.h"
 #include "throttle_valve.h"
 #include "pts.h"
+#include "servotesting.h"
 
 extern "C" {
 #include <app/drivers/blink.h>
@@ -55,8 +56,9 @@ int main(void) {
     }
 
     LOG_INF("Starting server");
-    serve_connections();
 
+    servotesting_demo();
+    serve_connections();
     while (1);
 }
 
